@@ -5,7 +5,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
-npm ci --omit=dev 2>/dev/null || npm install
+npm install
 npx astro build
 sudo nginx -t && sudo systemctl reload nginx
 

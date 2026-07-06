@@ -56,7 +56,7 @@ log "=== 第 2 步：安装依赖 & 构建 ==="
 cd "$PROJECT_DIR"
 [ -f "$PROJECT_DIR/package.json" ] || err "未找到 package.json，请在项目根目录运行此脚本"
 
-npm ci --omit=dev 2>/dev/null || npm install
+npm install
 npx astro build
 
 log "构建完成: $DIST_DIR"
