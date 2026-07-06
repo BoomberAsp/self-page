@@ -28,10 +28,10 @@ log "=== 第 1 步：系统依赖 ==="
 
 apt-get update -qq
 
-# Node.js 20.x LTS
+# Node.js 22.x LTS（Astro 7 要求 >=22.12.0）
 if ! command -v node &>/dev/null; then
-    log "安装 Node.js 20.x..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    log "安装 Node.js 22.x..."
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
     apt-get install -y nodejs
 fi
 log "Node.js $(node -v), npm $(npm -v)"
