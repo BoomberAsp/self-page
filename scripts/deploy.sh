@@ -65,6 +65,12 @@ cd "$PROJECT_DIR"
 log "使用阿里云 npm 镜像..."
 npm config set registry https://registry.npmmirror.com
 
+# Puppeteer 暂未使用，跳过浏览器下载
+export PUPPETEER_SKIP_DOWNLOAD=true
+
+# 清理可能损坏的缓存
+rm -rf /root/.cache/puppeteer
+
 npm install
 npx astro build
 
