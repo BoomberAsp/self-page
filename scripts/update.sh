@@ -1,11 +1,10 @@
 #!/bin/bash
 set -euo pipefail
-# OneWeblog 更新脚本 — 拉取代码 + 构建 + 重载 Nginx
+# OneWeblog 更新脚本 — 安装依赖 + 构建 + 重载 Nginx
 
-PROJECT_DIR="/opt/oneweblog"
-
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
-git pull origin main
+
 npm ci --omit=dev 2>/dev/null || npm install
 npx astro build
 sudo nginx -t && sudo systemctl reload nginx
