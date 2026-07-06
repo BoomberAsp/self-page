@@ -31,8 +31,13 @@ apt-get update -qq
 # Node.js 22.x LTS（Astro 7 要求 >=22.12.0）
 if ! command -v node &>/dev/null; then
     log "安装 Node.js 22.x..."
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-    apt-get install -y nodejs
+    NODE_VERSION="22.20.0"
+    NODE_ARCH="linux-x64"
+    NODE_URL="https://npmmirror.com/mirrors/node/v${NODE_VERSION}/node-v${NODE_VERSION}-${NODE_ARCH}.tar.xz"
+
+    curl -fsSL "$NODE_URL" -o /tmp/node.tar.xz
+    tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1
+    rm -f /tmp/node.tar.xz
 fi
 log "Node.js $(node -v), npm $(npm -v)"
 
@@ -55,6 +60,10 @@ log "=== 第 2 步：安装依赖 & 构建 ==="
 
 cd "$PROJECT_DIR"
 [ -f "$PROJECT_DIR/package.json" ] || err "未找到 package.json，请在项目根目录运行此脚本"
+
+# 使用阿里云镜像加速（腾讯云内地服务器访问 npm 官方源很慢）
+log "使用阿里云 npm 镜像..."
+npm config set registry https://registry.npmmirror.com
 
 npm install
 npx astro build
