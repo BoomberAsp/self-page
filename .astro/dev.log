@@ -1,0 +1,164 @@
+{"message":"connected.","label":"vite","level":"info"}
+{"message":"Generated 0ms","label":"types","level":"info"}
+{"message":"connected.","label":"vite","level":"info"}
+{"message":"Syncing content","label":"content","level":"info"}
+{"message":"Synced content","label":"content","level":"info"}
+{"message":" astro  v7.0.6 ready in 1439 ms\n┃ Local    http://localhost:4321/\n┃ Network  use --host to expose","label":"SKIP_FORMAT","level":"info"}
+{"message":"watching for file changes...","label":null,"level":"info"}
+Invalid DOM property `class`. Did you mean `className`?
+Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?
+Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?
+Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?
+{"message":"[200] / 60ms","label":null,"level":"info"}
+{"message":"[200] /posts/2025-07-05-hello-world 121ms","label":null,"level":"info"}
+{"message":"[200] /posts/2025-07-05-hello-world 4ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[Unhandled error] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\nhttps://react.dev/link/hydration-mismatch\n\n  <ThemeToggle>\n    <button onClick={function toggle} class=\"flex items...\" aria-label=\"切换主题\">\n      <Sun size={16}>\n        <svg\n          ref={null}\n          xmlns=\"http://www.w3.org/2000/svg\"\n          width={16}\n          height={16}\n          viewBox=\"0 0 24 24\"\n          fill=\"none\"\n          stroke=\"currentColor\"\n          strokeWidth={2}\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n+         className=\"lucide lucide-sun\"\n-         className=\"lucide lucide-moon\"\n          aria-hidden=\"true\"\n        >\n+         <circle cx=\"12\" cy=\"12\" r=\"4\">\n-         <path\n-           d=\"M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004....\"\n-         >\n          ...\n      ...\n\n > throwOnHydrationMismatch node_modules/react-dom/cjs/react-dom-client.development.js:5238:10\n > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:12027:16\n > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29\n > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21\n > workLoopConcurrentByScheduler node_modules/react-dom/cjs/react-dom-client.development.js:17635:8\n > renderRootConcurrent node_modules/react-dom/cjs/react-dom-client.development.js:17617:14\n > performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16503:10\n > performWorkOnRootViaSchedulerTask node_modules/react-dom/cjs/react-dom-client.development.js:18957:6\n > MessagePort.performWorkUntilDeadline node_modules/scheduler/cjs/scheduler.development.js:45:47\n","label":"vite","level":"error"}
+{"message":"[200] / 2ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[Unhandled error] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\nhttps://react.dev/link/hydration-mismatch\n\n  <ThemeToggle>\n    <button onClick={function toggle} class=\"flex items...\" aria-label=\"切换主题\">\n      <Sun size={16}>\n        <svg\n          ref={null}\n          xmlns=\"http://www.w3.org/2000/svg\"\n          width={16}\n          height={16}\n          viewBox=\"0 0 24 24\"\n          fill=\"none\"\n          stroke=\"currentColor\"\n          strokeWidth={2}\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n+         className=\"lucide lucide-sun\"\n-         className=\"lucide lucide-moon\"\n          aria-hidden=\"true\"\n        >\n+         <circle cx=\"12\" cy=\"12\" r=\"4\">\n-         <path\n-           d=\"M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004....\"\n-         >\n          ...\n      ...\n\n > throwOnHydrationMismatch node_modules/react-dom/cjs/react-dom-client.development.js:5238:10\n > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:12027:16\n > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29\n > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21\n > workLoopConcurrentByScheduler node_modules/react-dom/cjs/react-dom-client.development.js:17635:8\n > renderRootConcurrent node_modules/react-dom/cjs/react-dom-client.development.js:17617:14\n > performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16503:10\n > performWorkOnRootViaSchedulerTask node_modules/react-dom/cjs/react-dom-client.development.js:18957:6\n > MessagePort.performWorkUntilDeadline node_modules/scheduler/cjs/scheduler.development.js:45:47\n","label":"vite","level":"error"}
+{"message":"[200] /projects 16ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[Unhandled error] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\nhttps://react.dev/link/hydration-mismatch\n\n  <ThemeToggle>\n    <button onClick={function toggle} class=\"flex items...\" aria-label=\"切换主题\">\n      <Sun size={16}>\n        <svg\n          ref={null}\n          xmlns=\"http://www.w3.org/2000/svg\"\n          width={16}\n          height={16}\n          viewBox=\"0 0 24 24\"\n          fill=\"none\"\n          stroke=\"currentColor\"\n          strokeWidth={2}\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n+         className=\"lucide lucide-sun\"\n-         className=\"lucide lucide-moon\"\n          aria-hidden=\"true\"\n        >\n+         <circle cx=\"12\" cy=\"12\" r=\"4\">\n-         <path\n-           d=\"M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004....\"\n-         >\n          ...\n      ...\n\n > throwOnHydrationMismatch node_modules/react-dom/cjs/react-dom-client.development.js:5238:10\n > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:12027:16\n > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29\n > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21\n > workLoopConcurrentByScheduler node_modules/react-dom/cjs/react-dom-client.development.js:17635:8\n > renderRootConcurrent node_modules/react-dom/cjs/react-dom-client.development.js:17617:14\n > performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16503:10\n > performWorkOnRootViaSchedulerTask node_modules/react-dom/cjs/react-dom-client.development.js:18957:6\n > MessagePort.performWorkUntilDeadline node_modules/scheduler/cjs/scheduler.development.js:45:47\n","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /projects 4ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[Unhandled error] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.\n- Date formatting in a user's locale which doesn't match the server.\n- External changing data without sending a snapshot of it along with the HTML.\n- Invalid HTML tag nesting.\n\nIt can also happen if the client has a browser extension installed which messes with the HTML before React loaded.\n\nhttps://react.dev/link/hydration-mismatch\n\n  <ThemeToggle>\n    <button onClick={function toggle} class=\"flex items...\" aria-label=\"切换主题\">\n      <Sun size={16}>\n        <svg\n          ref={null}\n          xmlns=\"http://www.w3.org/2000/svg\"\n          width={16}\n          height={16}\n          viewBox=\"0 0 24 24\"\n          fill=\"none\"\n          stroke=\"currentColor\"\n          strokeWidth={2}\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n+         className=\"lucide lucide-sun\"\n-         className=\"lucide lucide-moon\"\n          aria-hidden=\"true\"\n        >\n+         <circle cx=\"12\" cy=\"12\" r=\"4\">\n-         <path\n-           d=\"M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004....\"\n-         >\n          ...\n      ...\n\n > throwOnHydrationMismatch node_modules/react-dom/cjs/react-dom-client.development.js:5238:10\n > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:12027:16\n > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29\n > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21\n > workLoopConcurrentByScheduler node_modules/react-dom/cjs/react-dom-client.development.js:17635:8\n > renderRootConcurrent node_modules/react-dom/cjs/react-dom-client.development.js:17617:14\n > performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16503:10\n > performWorkOnRootViaSchedulerTask node_modules/react-dom/cjs/react-dom-client.development.js:18957:6\n > MessagePort.performWorkUntilDeadline node_modules/scheduler/cjs/scheduler.development.js:45:47\n","label":"vite","level":"error"}
+{"message":"[200] / 4ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] / 4ms","label":null,"level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"An error happened during full reload\nFailed to load url astro:server-app.js (resolved id: astro:server-app.js). Does the file exist?\nError: Failed to load url astro:server-app.js (resolved id: astro:server-app.js). Does the file exist?\n    at loadAndTransform (file:///E:/self-page/node_modules/vite/dist/node/chunks/node.js:19718:31)","label":"vite","level":"error"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"[200] / 10ms","label":null,"level":"info"}
+{"message":"[200] / 2ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"[200] / 13ms","label":null,"level":"info"}
+{"message":"[200] / 2ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] / 3ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"/src/styles/global.css","label":"watch","level":"info"}
+{"message":"/src/styles/global.css","label":"watch","level":"info"}
+{"message":"/src/styles/global.css, /src/components/react/MobileNav.tsx","label":"watch","level":"info"}
+{"message":"/src/styles/global.css, /src/components/react/MobileNav.tsx","label":"watch","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"program reload","label":"vite","level":"info"}
+{"message":"[200] / 22ms","label":null,"level":"info"}
+{"message":"[200] / 3ms","label":null,"level":"info"}
+{"message":"[200] / 2ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 1ms","label":null,"level":"info"}
+{"message":"dependency optimized: fuse.js","label":"vite","level":"info"}
+{"message":"[200] /posts 26ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 0ms","label":null,"level":"info"}
+{"message":"[200] / 3ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 0ms","label":null,"level":"info"}
+{"message":"[200] /posts/2025-07-05-hello-world 24ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 0ms","label":null,"level":"info"}
+{"message":"[200] /download 18ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 0ms","label":null,"level":"info"}
+{"message":"[200] /projects 18ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 1ms","label":null,"level":"info"}
+{"message":"[200] /projects 3ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 1ms","label":null,"level":"info"}
+{"message":"[200] /download 4ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 1ms","label":null,"level":"info"}
+{"message":"[200] /posts 5ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 0ms","label":null,"level":"info"}
+{"message":"[200] / 3ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 0ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /rss.xml 3ms","label":null,"level":"info"}
+{"message":"[console.error] Invalid DOM property `class`. Did you mean `className`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-width`. Did you mean `strokeWidth`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linecap`. Did you mean `strokeLinecap`?","label":"vite","level":"error"}
+{"message":"[console.error] Invalid DOM property `stroke-linejoin`. Did you mean `strokeLinejoin`?","label":"vite","level":"error"}
+{"message":"[200] /search.json 0ms","label":null,"level":"info"}

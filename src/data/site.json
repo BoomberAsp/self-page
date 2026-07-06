@@ -1,0 +1,11 @@
+{
+  "name": "OneWeblog",
+  "title": "OneWeblog",
+  "description": "学习笔记、博文与项目展示",
+  "author": "Your Name",
+  "url": "https://oneweblog.cn",
+  "social": {
+    "github": "https://github.com/",
+    "email": "mailto:me@oneweblog.cn"
+  }
+}

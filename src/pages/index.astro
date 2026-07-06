@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../components/astro/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 5);
+
+const navCards = [
+  { href: '/posts', icon: '📝', title: '博文', desc: '学习笔记与技术文章' },
+  { href: '/projects', icon: '🚀', title: '项目', desc: '参与的作品与产品' },
+  { href: '/download', icon: '📥', title: '下载', desc: '笔记与资料下载' },
+];
+---
+
+<BaseLayout>
+  <section class="mb-14">
+    <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-4">
+      你好，我是...
+    </h1>
+    <p class="text-lg text-[var(--text-secondary)] leading-relaxed max-w-[600px]">
+      欢迎来到我的个人网站。这里记录我的学习笔记、技术博文，以及我参与的项目。
+    </p>
+  </section>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-14">
+    {navCards.map((card) => (
+      <a href={card.href} class="card p-6 no-underline group">
+        <div class="text-2xl mb-3">{card.icon}</div>
+        <h3 class="font-semibold text-[var(--heading)] mb-1 group-hover:text-[var(--primary)] transition-colors">{card.title}</h3>
+        <p class="text-sm text-[var(--text-tertiary)]">{card.desc}</p>
+      </a>
+    ))}
+  </div>
+
+  <section>
+    <h2 class="text-xl font-bold text-[var(--heading)] mb-5">最近更新</h2>
+    {posts.length === 0 ? (
+      <p class="text-[var(--text-tertiary)]">暂无文章。</p>
+    ) : (
+      <div class="space-y-2">
+        {posts.map((post) => (
+          <a href={`/posts/${post.id}`} class="card flex items-center justify-between gap-4 px-6 py-4 no-underline">
+            <div class="min-w-0">
+              <h3 class="font-medium text-[var(--heading)] truncate">{post.data.title}</h3>
+              {post.data.summary && (
+                <p class="text-sm text-[var(--text-tertiary)] truncate mt-0.5">{post.data.summary}</p>
+              )}
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              {post.data.tags.slice(0, 2).map((t) => (
+                <span class="chip">{t}</span>
+              ))}
+              <time datetime={post.data.date.toISOString()} class="text-xs text-[var(--text-tertiary)] whitespace-nowrap">
+                {post.data.date.toLocaleDateString('zh-CN')}
+              </time>
+            </div>
+          </a>
+        ))}
+      </div>
+    )}
+  </section>
+</BaseLayout>

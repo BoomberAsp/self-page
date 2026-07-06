@@ -1,0 +1,71 @@
+---
+import '../../styles/global.css';
+import SEO from './SEO.astro';
+import ThemeToggle from '../react/ThemeToggle';
+import MobileNav from '../react/MobileNav';
+import Sidebar from '../react/Sidebar';
+import SearchModal from '../react/SearchModal';
+
+interface Props {
+  title?: string;
+  description?: string;
+  class?: string;
+}
+
+const { title, description, class: bodyClass } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <SEO {title} {description} />
+</head>
+<body class="min-h-screen">
+  <script is:inline>
+    (function () {
+      var s = localStorage.getItem('theme');
+      var p = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (s === 'dark' || (!s && p)) document.documentElement.classList.add('dark');
+    })();
+  </script>
+
+  <MobileNav client:load />
+
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="hidden lg:flex flex-col w-64 shrink-0 border-r border-[var(--border)] h-screen sticky top-0 bg-[var(--bg-secondary)]">
+      <div class="px-5 pt-7 pb-5">
+        <a href="/" class="text-lg font-semibold text-[var(--heading)] tracking-tight hover:text-[var(--primary)] transition-colors no-underline">
+          OneWeblog
+        </a>
+      </div>
+
+      <div class="flex-1 px-3 overflow-y-auto">
+        <Sidebar client:load currentPath={currentPath} />
+      </div>
+
+      <div class="px-3 pb-6 space-y-1 border-t border-[var(--border-light)] pt-3">
+        <SearchModal client:load />
+        <ThemeToggle client:load />
+        <a href="/rss.xml" class="block px-3 py-1.5 text-sm text-[var(--text-tertiary)] hover:text-[var(--text)] transition-colors rounded-lg no-underline">
+          RSS
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class={`flex-1 min-w-0 px-5 py-8 lg:px-12 lg:py-12 pt-16 lg:pt-12 ${bodyClass ?? ''}`}>
+      <div class="mx-auto max-w-4xl">
+        <slot />
+      </div>
+    </main>
+  </div>
+
+  <footer class="border-t border-[var(--border)] text-center py-8 text-sm text-[var(--text-tertiary)]">
+    <p>&copy; {new Date().getFullYear()} OneWeblog. All rights reserved.</p>
+  </footer>
+</body>
+</html>

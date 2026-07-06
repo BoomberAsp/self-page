@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../../components/astro/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const pageSize = 8;
+
+const allPosts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const totalPages = Math.ceil(allPosts.length / pageSize);
+const posts = allPosts.slice(0, pageSize);
+
+const tagCounts: Record<string, number> = {};
+for (const p of allPosts) {
+  for (const t of p.data.tags) {
+    tagCounts[t] = (tagCounts[t] || 0) + 1;
+  }
+}
+const tags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+---
+
+<BaseLayout title="博文">
+  <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-8">博文</h1>
+
+  {tags.length > 0 && (
+    <div class="flex flex-wrap gap-2 mb-10">
+      {tags.map(([tag, count]) => (
+        <a href={`/tags/${tag}`} class="chip no-underline">
+          {tag}
+          <span class="ml-1 opacity-50">{count}</span>
+        </a>
+      ))}
+    </div>
+  )}
+
+  {posts.length === 0 ? (
+    <p class="text-[var(--text-tertiary)]">暂无文章。</p>
+  ) : (
+    <div class="space-y-3">
+      {posts.map((post) => (
+        <a href={`/posts/${post.id}`} class="card block px-6 py-5 no-underline">
+          <h2 class="text-xl font-semibold text-[var(--heading)] mb-1.5">{post.data.title}</h2>
+          {post.data.summary && (
+            <p class="text-[var(--text-secondary)] line-clamp-2 mb-3">{post.data.summary}</p>
+          )}
+          <div class="flex flex-wrap items-center gap-2">
+            {post.data.tags.map((t) => (
+              <span class="chip">{t}</span>
+            ))}
+            <time datetime={post.data.date.toISOString()} class="text-xs text-[var(--text-tertiary)]">
+              {post.data.date.toLocaleDateString('zh-CN')}
+            </time>
+          </div>
+        </a>
+      ))}
+    </div>
+  )}
+
+  {totalPages > 1 && (
+    <nav class="flex items-center justify-center gap-2 mt-12">
+      <span class="px-3 py-2 text-sm text-[var(--text-tertiary)]">第 1 页 / 共 {totalPages} 页</span>
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) =>
+        p === 1 ? (
+          <span class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-sm font-medium">1</span>
+        ) : (
+          <a
+            href={p === 1 ? '/posts' : `/posts/${p}`}
+            class="px-3 py-1.5 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--border-light)] transition-colors no-underline"
+          >
+            {p}
+          </a>
+        )
+      )}
+    </nav>
+  )}
+</BaseLayout>

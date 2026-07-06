@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../../components/astro/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const notes = (await getCollection('notes'))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const typeLabel = (t: string) => t === 'pdf' ? 'PDF 手写' : 'Markdown';
+---
+
+<BaseLayout title="笔记">
+  <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-2">笔记</h1>
+  <p class="text-[var(--text-tertiary)] mb-10">课程笔记与学习资料</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {notes.map((note) => (
+      <a href={`/notes/${note.id}`} class="card p-6 no-underline flex flex-col group">
+        <div class="flex items-center justify-between mb-3">
+          <span class={`chip text-xs ${note.data.type === 'pdf' ? '' : '!bg-[var(--primary-light)] !text-[var(--primary)]'}`}>
+            {typeLabel(note.data.type)}
+          </span>
+          {note.data.subject && (
+            <span class="text-xs text-[var(--text-tertiary)]">{note.data.subject}</span>
+          )}
+        </div>
+        <h2 class="text-lg font-semibold text-[var(--heading)] mb-2 group-hover:text-[var(--primary)] transition-colors">
+          {note.data.title}
+        </h2>
+        <p class="text-sm text-[var(--text-secondary)] leading-relaxed flex-1">
+          {note.data.summary}
+        </p>
+        {note.data.tags.length > 0 && (
+          <div class="flex flex-wrap gap-1.5 mt-4">
+            {note.data.tags.map((t) => (
+              <span class="text-xs text-[var(--text-tertiary)] bg-[var(--border-light)] px-2 py-0.5 rounded-full">{t}</span>
+            ))}
+          </div>
+        )}
+      </a>
+    ))}
+  </div>
+</BaseLayout>

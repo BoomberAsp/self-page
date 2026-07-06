@@ -1,0 +1,108 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import BaseLayout from '../../components/astro/BaseLayout.astro';
+import CopyButton from '../../components/react/CopyButton';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  return posts.map((post) => ({ params: { slug: post.id } }));
+}
+
+const { slug } = Astro.params;
+const post = await getEntry('posts', slug!);
+
+if (!post) return Astro.redirect('/404');
+
+const allPosts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const idx = allPosts.findIndex((p) => p.id === slug);
+const prev = idx > 0 ? allPosts[idx - 1] : null;
+const next = idx < allPosts.length - 1 ? allPosts[idx + 1] : null;
+
+const { Content, headings } = await render(post);
+
+function readingTime(body: string | undefined): number {
+  if (!body) return 1;
+  const chars = body.replace(/\s/g, '').length;
+  return Math.max(1, Math.round(chars / 400));
+}
+---
+
+<BaseLayout title={post.data.title} description={post.data.summary}>
+  <div class="flex gap-10">
+    <article class="min-w-0 flex-1">
+      <header class="mb-10">
+        <!-- Breadcrumb-style category -->
+        <div class="flex items-center gap-1.5 text-sm mb-4">
+          <a href="/posts" class="text-[var(--link)] font-semibold uppercase tracking-wide text-xs hover:underline no-underline">博文</a>
+          <span class="text-[var(--text-tertiary)]">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
+          </span>
+        </div>
+
+        <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-5 leading-tight">
+          {post.data.title}
+        </h1>
+
+        <div class="flex flex-wrap items-center gap-3 text-[var(--text-tertiary)] text-sm">
+          <time datetime={post.data.date.toISOString()}>
+            {post.data.date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </time>
+          <span aria-hidden="true">·</span>
+          <span>{readingTime(post.body)} 分钟阅读</span>
+        </div>
+
+        {post.data.tags.length > 0 && (
+          <div class="flex flex-wrap gap-2 mt-4">
+            {post.data.tags.map((t) => (
+              <a href={`/tags/${t}`} class="chip no-underline">{t}</a>
+            ))}
+          </div>
+        )}
+      </header>
+
+      <div class="prose">
+        <Content />
+      </div>
+
+      <CopyButton client:load />
+
+      <footer class="mt-16 pt-8 border-t border-[var(--border)]">
+        <nav class="grid grid-cols-2 gap-4">
+          {prev ? (
+            <a href={`/posts/${prev.id}`} class="card block px-5 py-4 no-underline col-start-1">
+              <span class="text-xs text-[var(--text-tertiary)]">上一篇</span>
+              <span class="block text-sm font-medium text-[var(--text)] mt-0.5 truncate">{prev.data.title}</span>
+            </a>
+          ) : <div />}
+          {next ? (
+            <a href={`/posts/${next.id}`} class="card block px-5 py-4 no-underline text-right col-start-2">
+              <span class="text-xs text-[var(--text-tertiary)]">下一篇</span>
+              <span class="block text-sm font-medium text-[var(--text)] mt-0.5 truncate">{next.data.title}</span>
+            </a>
+          ) : <div />}
+        </nav>
+      </footer>
+    </article>
+
+    <!-- Right TOC -->
+    {headings.length > 1 && (
+      <aside class="hidden xl:block w-48 shrink-0">
+        <div class="sticky top-12">
+          <h4 class="text-sm font-semibold text-[var(--text-secondary)] mb-3">目录</h4>
+          <nav class="flex flex-col">
+            {headings.filter(h => h.depth <= 3).map((h) => (
+              <a
+                href={`#${h.slug}`}
+                class="toc-link"
+                style={`padding-left: ${0.5 + (h.depth - 2) * 0.5}rem`}
+              >
+                {h.text}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </aside>
+    )}
+  </div>
+</BaseLayout>

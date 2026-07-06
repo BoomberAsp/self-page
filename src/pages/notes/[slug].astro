@@ -1,0 +1,110 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import { statSync } from 'fs';
+import { resolve } from 'path';
+import BaseLayout from '../../components/astro/BaseLayout.astro';
+import CopyButton from '../../components/react/CopyButton';
+
+export async function getStaticPaths() {
+  const notes = await getCollection('notes');
+  return notes.map((note) => ({ params: { slug: note.id } }));
+}
+
+const { slug } = Astro.params;
+const note = await getEntry('notes', slug!);
+
+if (!note) return Astro.redirect('/404');
+
+const type = note.data.type ?? 'markdown';
+const isMarkdown = type === 'markdown';
+
+let Content: any = null;
+let headings: any[] = [];
+if (isMarkdown) {
+  ({ Content, headings } = await render(note));
+}
+
+let fileSize = '';
+if (!isMarkdown && note.data.pdf_file) {
+  try {
+    const filePath = resolve('public', note.data.pdf_file.slice(1));
+    const bytes = statSync(filePath).size;
+    fileSize = bytes > 1024 * 1024
+      ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+      : `${(bytes / 1024).toFixed(0)} KB`;
+  } catch {
+    fileSize = '';
+  }
+}
+---
+
+<BaseLayout title={note.data.title} description={note.data.summary}>
+  <header class="mb-10">
+    <div class="flex items-center gap-1.5 text-sm mb-4">
+      <a href="/notes" class="text-[var(--link)] font-semibold uppercase tracking-wide text-xs hover:underline no-underline">笔记</a>
+      <span class="text-[var(--text-tertiary)]">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
+      </span>
+    </div>
+
+    <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-5 leading-tight">
+      {note.data.title}
+    </h1>
+
+    <div class="flex flex-wrap items-center gap-3 text-[var(--text-tertiary)] text-sm">
+      <time datetime={note.data.date.toISOString()}>
+        {note.data.date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
+      </time>
+      {note.data.subject && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{note.data.subject}</span>
+        </>
+      )}
+      {fileSize && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{fileSize}</span>
+        </>
+      )}
+    </div>
+
+    {note.data.tags.length > 0 && (
+      <div class="flex flex-wrap gap-2 mt-4">
+        {note.data.tags.map((t) => (
+          <span class="chip">{t}</span>
+        ))}
+      </div>
+    )}
+  </header>
+
+  {isMarkdown ? (
+    <div class="prose">
+      <Content />
+      <CopyButton client:load />
+    </div>
+  ) : (
+    <div class="card p-8 text-center space-y-6">
+      <p class="text-[var(--text-secondary)] leading-relaxed max-w-md mx-auto">
+        {note.data.summary}
+      </p>
+      <div class="flex items-center justify-center gap-3">
+        <a
+          href={note.data.pdf_file}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-primary"
+        >
+          在线查看
+        </a>
+        <a
+          href={note.data.pdf_file}
+          download
+          class="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors rounded-full hover:bg-[var(--border-light)] no-underline"
+        >
+          下载 PDF{fileSize ? ` (${fileSize})` : ''}
+        </a>
+      </div>
+    </div>
+  )}
+</BaseLayout>

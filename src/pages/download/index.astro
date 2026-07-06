@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../components/astro/BaseLayout.astro';
+
+const notes = [
+  {
+    title: '数学分析笔记',
+    file: '/files/数学分析笔记.pdf',
+    desc: '数学分析课程手写笔记，涵盖极限、连续、微分、积分等核心内容。',
+    icon: '📐',
+  },
+  {
+    title: '运筹与优化笔记',
+    file: '/files/运筹与优化笔记.pdf',
+    desc: '运筹学与最优化方法手写笔记，涵盖线性规划、非线性规划、动态规划等内容。',
+    icon: '📊',
+  },
+];
+---
+
+<BaseLayout title="下载">
+  <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-2">下载中心</h1>
+  <p class="text-[var(--text-tertiary)] mb-10">课程笔记与学习资料</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {notes.map((note) => (
+      <div class="card p-6 flex flex-col">
+        <div class="text-3xl mb-4">{note.icon}</div>
+        <h2 class="text-lg font-semibold text-[var(--heading)] mb-2">{note.title}</h2>
+        <p class="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed flex-1">{note.desc}</p>
+        <div class="flex items-center gap-3">
+          <a
+            href={note.file}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-primary text-sm"
+          >
+            在线查看
+          </a>
+          <a
+            href={note.file}
+            download
+            class="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors rounded-full hover:bg-[var(--border-light)] no-underline"
+          >
+            下载 PDF
+          </a>
+        </div>
+      </div>
+    ))}
+  </div>
+</BaseLayout>
