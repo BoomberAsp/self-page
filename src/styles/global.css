@@ -175,6 +175,7 @@ body {
   background: var(--code-bg);
   border: 1px solid var(--border-light);
   font-weight: 400;
+  color: var(--text);
 }
 
 .prose pre {
@@ -182,6 +183,16 @@ body {
   border: 1px solid var(--border);
   font-size: 0.875rem;
   line-height: 1.65;
+  background: var(--code-bg);
+  color: var(--text);
+}
+
+/* 覆盖 typography 插件在 pre 内 code 的暗色默认样式 */
+.prose pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
 }
 
 .prose blockquote {
@@ -206,6 +217,8 @@ body {
   line-height: 1.65;
   padding: 1rem 3.5rem 1rem 1rem;
   overflow-x: auto;
+  background: var(--code-bg);
+  color: var(--text);
 }
 .code-block-wrapper .copy-btn {
   position: absolute;
