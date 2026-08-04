@@ -83,10 +83,10 @@ log "构建完成"
 # ============================================================
 log "=== 第 3 步：启动 Node 服务 ==="
 
-pm2 delete oneweblog 2>/dev/null || true
-pm2 start npm --name oneweblog -- run start
-pm2 save
-pm2 startup systemd -u root --hp /root 2>/dev/null || true
+npx pm2 delete oneweblog 2>/dev/null || true
+npx pm2 start npm --name oneweblog -- run start
+npx pm2 save
+npx pm2 startup systemd -u root --hp /root 2>/dev/null || true
 
 log "Node 服务已启动 (端口 $NODE_PORT)"
 
