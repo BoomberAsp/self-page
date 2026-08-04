@@ -3,12 +3,13 @@ import BaseLayout from '../../components/astro/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
 const pageSize = 8;
+const pageNum = Math.max(1, Number(Astro.url.searchParams.get('page')) || 1);
 
 const allPosts = (await getCollection('posts', ({ data }) => !data.draft))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
 const totalPages = Math.ceil(allPosts.length / pageSize);
-const posts = allPosts.slice(0, pageSize);
+const posts = allPosts.slice((pageNum - 1) * pageSize, pageNum * pageSize);
 
 const tagCounts: Record<string, number> = {};
 for (const p of allPosts) {
@@ -58,13 +59,13 @@ const tags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
 
   {totalPages > 1 && (
     <nav class="flex items-center justify-center gap-2 mt-12">
-      <span class="px-3 py-2 text-sm text-[var(--text-tertiary)]">第 1 页 / 共 {totalPages} 页</span>
+      <span class="px-3 py-2 text-sm text-[var(--text-tertiary)]">第 {pageNum} 页 / 共 {totalPages} 页</span>
       {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) =>
-        p === 1 ? (
-          <span class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-sm font-medium">1</span>
+        p === pageNum ? (
+          <span class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-sm font-medium">{p}</span>
         ) : (
           <a
-            href={p === 1 ? '/posts' : `/posts/${p}`}
+            href={p === 1 ? '/posts' : `/posts?page=${p}`}
             class="px-3 py-1.5 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--border-light)] transition-colors no-underline"
           >
             {p}

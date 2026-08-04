@@ -1,14 +1,7 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
-import { statSync } from 'fs';
-import { resolve } from 'path';
 import BaseLayout from '../../components/astro/BaseLayout.astro';
 import CopyButton from '../../components/react/CopyButton';
-
-export async function getStaticPaths() {
-  const notes = await getCollection('notes');
-  return notes.map((note) => ({ params: { slug: note.id } }));
-}
 
 const { slug } = Astro.params;
 const note = await getEntry('notes', slug!);
@@ -24,18 +17,7 @@ if (isMarkdown) {
   ({ Content, headings } = await render(note));
 }
 
-let fileSize = '';
-if (!isMarkdown && note.data.pdf_file) {
-  try {
-    const filePath = resolve('public', note.data.pdf_file.slice(1));
-    const bytes = statSync(filePath).size;
-    fileSize = bytes > 1024 * 1024
-      ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-      : `${(bytes / 1024).toFixed(0)} KB`;
-  } catch {
-    fileSize = '';
-  }
-}
+const fileSize = note.data.file_size ?? '';
 ---
 
 <BaseLayout title={note.data.title} description={note.data.summary}>

@@ -3,11 +3,6 @@ import { getCollection, getEntry, render } from 'astro:content';
 import BaseLayout from '../../components/astro/BaseLayout.astro';
 import CopyButton from '../../components/react/CopyButton';
 
-export async function getStaticPaths() {
-  const posts = await getCollection('posts', ({ data }) => !data.draft);
-  return posts.map((post) => ({ params: { slug: post.id } }));
-}
-
 const { slug } = Astro.params;
 const post = await getEntry('posts', slug!);
 

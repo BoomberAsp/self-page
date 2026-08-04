@@ -2,12 +2,6 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../components/astro/BaseLayout.astro';
 
-export async function getStaticPaths() {
-  const posts = await getCollection('posts', ({ data }) => !data.draft);
-  const tags = new Set(posts.flatMap((p) => p.data.tags));
-  return Array.from(tags).map((tag) => ({ params: { tag } }));
-}
-
 const { tag } = Astro.params;
 const posts = (await getCollection('posts', ({ data }) => !data.draft))
   .filter((p) => p.data.tags.includes(tag!))

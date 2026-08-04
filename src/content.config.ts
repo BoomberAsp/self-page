@@ -21,6 +21,7 @@ const notes = defineCollection({
     subject: z.string().optional(),
     type: z.enum(['markdown', 'pdf']).default('markdown'),
     pdf_file: z.string().optional(),
+    file_size: z.string().optional(),
     summary: z.string().optional(),
     tags: z.array(z.string()).default([]),
   }),

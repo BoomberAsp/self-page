@@ -23,6 +23,9 @@
     "pdf_file": {
       "type": "string"
     },
+    "file_size": {
+      "type": "string"
+    },
     "summary": {
       "type": "string"
     },
