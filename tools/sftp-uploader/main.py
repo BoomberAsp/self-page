@@ -11,8 +11,8 @@ from pathlib import Path
 import paramiko
 
 CONFIG_FILE = Path.home() / ".oneweblog-uploader.json"
-REMOTE_CONTENT = "/home/ubuntu/datadisk/self-page/src/content"
-REMOTE_IMAGES = "/home/ubuntu/datadisk/self-page/public/images"
+REMOTE_CONTENT = "/opt/oneweblog/src/content"
+REMOTE_IMAGES = "/opt/oneweblog/public/images"
 
 
 # ── helpers ────────────────────────────────────────────────
@@ -28,6 +28,18 @@ def load_config():
 
 def save_config(data: dict):
     CONFIG_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def ensure_remote_dir(sftp: paramiko.SFTPClient, remote_path: str):
+    """Recursively create remote directory like `mkdir -p`."""
+    dirs = remote_path.strip("/").split("/")
+    cur = ""
+    for d in dirs:
+        cur += "/" + d
+        try:
+            sftp.stat(cur)
+        except FileNotFoundError:
+            sftp.mkdir(cur)
 
 
 # ── main window ─────────────────────────────────────────────
@@ -361,7 +373,7 @@ class App(tk.Tk):
 
     def _load_private_key(self, key_path: str, passphrase: str):
         """Try to load a private key with passphrase. Raises on failure."""
-        for key_class in (paramiko.Ed25519Key, paramiko.RSAKey, paramiko.ECDSAKey, paramiko.DSSKey):
+        for key_class in (paramiko.Ed25519Key, paramiko.RSAKey, paramiko.ECDSAKey):
             try:
                 return key_class.from_private_key_file(key_path, password=passphrase or None)
             except (paramiko.PasswordRequiredException, paramiko.SSHException) as ex:
@@ -515,6 +527,14 @@ class App(tk.Tk):
         cancel_btn.pack(pady=(4, 8))
 
         def do_upload():
+            # ensure target directory exists
+            try:
+                ensure_remote_dir(self.sftp, target_dir)
+            except Exception as e:
+                self.after(0, lambda err=str(e): self._log(f"创建远程目录失败: {err}"))
+                self.after(0, lambda: self._on_upload_done([], progress_win, display))
+                return
+
             results = []
             for i, filepath in enumerate(files):
                 if self._cancel_upload:

@@ -11,9 +11,12 @@ export default defineConfig({
   adapter: node({ mode: 'standalone' }),
   integrations: [
     react(),
-    mdx({ rehypePlugins: [rehypeRewriteImg] }),
+    mdx(),
     sitemap(),
   ],
+  markdown: {
+    rehypePlugins: [rehypeRewriteImg],
+  },
   site: 'https://oneweblog.cn',
   vite: {
     plugins: [tailwindcss()],

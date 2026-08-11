@@ -1,4 +1,4 @@
-import type { Element, Root } from "hast";
+import type { Root } from "hast";
 import { visit } from "unist-util-visit";
 
 export function rehypeRewriteImg() {
@@ -9,12 +9,33 @@ export function rehypeRewriteImg() {
 
     const [, collection, slug] = match;
 
-    visit(tree, "element", (node: Element) => {
+    // HTML img elements (plain HTML in .md files)
+    visit(tree, "element", (node: any) => {
       if (node.tagName !== "img") return;
       const src = (node.properties?.src as string) ?? "";
-      if (!src.startsWith("./")) return;
+      if (src.startsWith("./")) {
+        node.properties.src = `/images/${collection}/${slug}/${src.slice(2)}`;
+      }
+    });
 
-      node.properties!.src = `/images/${collection}/${slug}/${src.slice(2)}`;
+    // JSX img elements — block-level (standalone in .mdx files)
+    visit(tree, "mdxJsxFlowElement", (node: any) => {
+      if (node.name !== "img") return;
+      for (const attr of node.attributes ?? []) {
+        if (attr.name === "src" && String(attr.value ?? "").startsWith("./")) {
+          attr.value = `/images/${collection}/${slug}/${String(attr.value).slice(2)}`;
+        }
+      }
+    });
+
+    // JSX img elements — inline (inside <a>/<p> in .mdx files)
+    visit(tree, "mdxJsxTextElement", (node: any) => {
+      if (node.name !== "img") return;
+      for (const attr of node.attributes ?? []) {
+        if (attr.name === "src" && String(attr.value ?? "").startsWith("./")) {
+          attr.value = `/images/${collection}/${slug}/${String(attr.value).slice(2)}`;
+        }
+      }
     });
   };
 }

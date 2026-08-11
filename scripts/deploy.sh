@@ -136,6 +136,45 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 }
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name $DOMAIN $WWW_DOMAIN;
+
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+
+    location /_astro/ {
+        root $PROJECT_DIR/dist/client;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /files/ {
+        alias $PROJECT_DIR/public/files/;
+        expires 7d;
+        add_header Cache-Control "public";
+    }
+
+    location /images/ {
+        alias $PROJECT_DIR/public/images/;
+        expires 7d;
+        add_header Cache-Control "public";
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:$NODE_PORT;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+    }
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+}
 NGINX
 
 ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/oneweblog
