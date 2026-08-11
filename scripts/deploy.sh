@@ -115,6 +115,13 @@ server {
         add_header Cache-Control "public";
     }
 
+    # 文章/笔记图片直接 serve
+    location /images/ {
+        alias $PROJECT_DIR/public/images/;
+        expires 7d;
+        add_header Cache-Control "public";
+    }
+
     # 其余请求反向代理到 Node
     location / {
         proxy_pass http://127.0.0.1:$NODE_PORT;
