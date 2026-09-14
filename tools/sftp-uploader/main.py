@@ -105,11 +105,11 @@ class App(tk.Tk):
         ttk.Radiobutton(bottom, text="博文 (posts)", variable=self.target_var, value="posts").pack(side=tk.RIGHT, padx=4)
         ttk.Label(bottom, text="上传目标:").pack(side=tk.RIGHT, padx=(16, 4))
 
-        # image subdirectory entry
-        self.img_subdir_var = tk.StringVar(value="posts/")
+        # subdirectory entry (applies to all targets, e.g. column name for posts)
+        self.img_subdir_var = tk.StringVar(value="")
         self.img_subdir_entry = ttk.Entry(bottom, textvariable=self.img_subdir_var, width=24)
         self.img_subdir_entry.pack(side=tk.RIGHT, padx=4)
-        ttk.Label(bottom, text="图片子目录:").pack(side=tk.RIGHT, padx=4)
+        ttk.Label(bottom, text="子目录:").pack(side=tk.RIGHT, padx=4)
 
         # status bar
         self.status_var = tk.StringVar(value="就绪")
@@ -495,13 +495,13 @@ class App(tk.Tk):
             return
 
         target = self.target_var.get()
+        subdir = self.img_subdir_var.get().strip().strip("/")
         if target == "images":
-            subdir = self.img_subdir_var.get().strip().rstrip("/")
             target_dir = f"{REMOTE_IMAGES}/{subdir}" if subdir else REMOTE_IMAGES
-            display = f"images/{subdir or '.'}"
+            display = f"images/{subdir}" if subdir else "images"
         else:
-            target_dir = f"{REMOTE_CONTENT}/{target}"
-            display = target
+            target_dir = f"{REMOTE_CONTENT}/{target}/{subdir}" if subdir else f"{REMOTE_CONTENT}/{target}"
+            display = f"{target}/{subdir}" if subdir else target
 
         self._cancel_upload = False
         self.status_var.set("正在上传...")

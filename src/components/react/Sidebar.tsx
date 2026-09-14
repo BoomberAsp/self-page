@@ -6,27 +6,44 @@ interface Section {
   items: { href: string; label: string }[];
 }
 
-const sections: Section[] = [
-  {
-    label: '导航',
-    defaultOpen: true,
-    items: [
-      { href: '/', label: '首页' },
-      { href: '/notes', label: '笔记' },
-      { href: '/posts', label: '博文' },
-    ],
-  },
-  {
-    label: '其他',
-    defaultOpen: true,
-    items: [
-      { href: '/projects', label: '项目' },
-      { href: '/download', label: '下载' },
-    ],
-  },
-];
+interface SidebarProps {
+  currentPath: string;
+  columns?: { href: string; label: string }[];
+}
 
-export default function Sidebar({ currentPath }: { currentPath: string }) {
+export default function Sidebar({ currentPath, columns = [] }: SidebarProps) {
+  const sections: Section[] = [
+    {
+      label: '导航',
+      defaultOpen: true,
+      items: [
+        { href: '/', label: '首页' },
+        { href: '/notes', label: '笔记' },
+        { href: '/posts', label: '博文' },
+      ],
+    },
+    ...(columns.length > 0
+      ? [
+          {
+            label: '栏目',
+            defaultOpen: true,
+            items: [
+              { href: '/columns', label: '全部栏目' },
+              ...columns,
+            ],
+          },
+        ]
+      : []),
+    {
+      label: '其他',
+      defaultOpen: true,
+      items: [
+        { href: '/projects', label: '项目' },
+        { href: '/download', label: '下载' },
+      ],
+    },
+  ];
+
   const [open, setOpen] = useState<Record<string, boolean>>(
     Object.fromEntries(sections.map((s) => [s.label, s.defaultOpen ?? true]))
   );

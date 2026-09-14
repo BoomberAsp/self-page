@@ -247,9 +247,9 @@ body {
   justify-content: space-between;
   width: 100%;
   padding: 0.25rem 0.75rem 0.25rem 1rem;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   background: none;
   border: none;
   cursor: pointer;
@@ -258,7 +258,7 @@ body {
   font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
-.sidebar-section-header:hover { color: var(--text-secondary); }
+.sidebar-section-header:hover { color: var(--text); }
 
 .sidebar-section-header .chevron {
   transition: transform 0.2s;

@@ -3,7 +3,9 @@ import { Menu, Search, X } from 'lucide-react';
 
 const links = [
   { href: '/', label: '首页' },
+  { href: '/notes', label: '笔记' },
   { href: '/posts', label: '博文' },
+  { href: '/columns', label: '栏目' },
   { href: '/projects', label: '项目' },
   { href: '/download', label: '下载' },
 ];

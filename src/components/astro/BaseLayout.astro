@@ -5,6 +5,7 @@ import ThemeToggle from '../react/ThemeToggle';
 import MobileNav from '../react/MobileNav';
 import Sidebar from '../react/Sidebar';
 import SearchModal from '../react/SearchModal';
+import { getColumns } from '../../lib/columns';
 
 interface Props {
   title?: string;
@@ -14,6 +15,11 @@ interface Props {
 
 const { title, description, class: bodyClass } = Astro.props;
 const currentPath = Astro.url.pathname;
+
+const columns = (await getColumns()).map((c) => ({
+  href: `/columns/${c.name}`,
+  label: c.displayName,
+}));
 ---
 
 <!DOCTYPE html>
@@ -44,7 +50,7 @@ const currentPath = Astro.url.pathname;
       </div>
 
       <div class="flex-1 px-3 overflow-y-auto">
-        <Sidebar client:load currentPath={currentPath} />
+        <Sidebar client:load currentPath={currentPath} columns={columns} />
       </div>
 
       <div class="px-3 pb-6 space-y-1 border-t border-[var(--border-light)] pt-3">

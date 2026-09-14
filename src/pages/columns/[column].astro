@@ -1,0 +1,56 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../components/astro/BaseLayout.astro';
+import { getColumns } from '../../lib/columns';
+
+const { column } = Astro.params;
+
+// 404 if the column directory doesn't exist
+const columns = await getColumns();
+const col = columns.find((c) => c.name === column);
+if (!col) return Astro.redirect('/404');
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft))
+  .filter((p) => p.id.startsWith(`${column}/`))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+
+<BaseLayout title={`栏目: ${col.displayName}`} description={col.description || undefined}>
+  <div class="flex items-center gap-1.5 text-sm mb-4">
+    <a href="/columns" class="text-[var(--link)] font-semibold uppercase tracking-wide text-xs hover:underline no-underline">栏目</a>
+    <span class="text-[var(--text-tertiary)]">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
+    </span>
+  </div>
+
+  <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-2">
+    {col.displayName}
+  </h1>
+  {col.description && (
+    <p class="text-[var(--text-secondary)] mb-2">{col.description}</p>
+  )}
+  <p class="text-[var(--text-tertiary)] mb-10">{posts.length} 篇文章</p>
+
+  {posts.length === 0 ? (
+    <p class="text-[var(--text-tertiary)]">本栏目暂无文章。</p>
+  ) : (
+    <div class="space-y-3">
+      {posts.map((post) => (
+        <a href={`/posts/${post.id}`} class="card block px-6 py-5 no-underline">
+          <h2 class="text-xl font-semibold text-[var(--heading)] mb-1.5">{post.data.title}</h2>
+          {post.data.summary && (
+            <p class="text-[var(--text-secondary)] line-clamp-2 mb-3">{post.data.summary}</p>
+          )}
+          <div class="flex flex-wrap items-center gap-2">
+            {post.data.tags.map((t) => (
+              <span class="chip">{t}</span>
+            ))}
+            <time datetime={post.data.date.toISOString()} class="text-xs text-[var(--text-tertiary)]">
+              {post.data.date.toLocaleDateString('zh-CN')}
+            </time>
+          </div>
+        </a>
+      ))}
+    </div>
+  )}
+</BaseLayout>

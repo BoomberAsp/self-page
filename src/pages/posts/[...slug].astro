@@ -2,6 +2,7 @@
 import { getCollection, getEntry, render } from 'astro:content';
 import BaseLayout from '../../components/astro/BaseLayout.astro';
 import CopyButton from '../../components/react/CopyButton';
+import { getColumnName } from '../../lib/columns';
 
 const { slug } = Astro.params;
 const post = await getEntry('posts', slug!);
@@ -13,6 +14,10 @@ const allPosts = (await getCollection('posts', ({ data }) => !data.draft))
 const idx = allPosts.findIndex((p) => p.id === slug);
 const prev = idx > 0 ? allPosts[idx - 1] : null;
 const next = idx < allPosts.length - 1 ? allPosts[idx + 1] : null;
+
+// column (栏目) this post belongs to, if any
+const column = slug?.includes('/') ? slug.split('/')[0] : null;
+const columnDisplayName = column ? getColumnName(column) : null;
 
 const { Content, headings } = await render(post);
 
@@ -30,6 +35,14 @@ function readingTime(body: string | undefined): number {
         <!-- Breadcrumb-style category -->
         <div class="flex items-center gap-1.5 text-sm mb-4">
           <a href="/posts" class="text-[var(--link)] font-semibold uppercase tracking-wide text-xs hover:underline no-underline">博文</a>
+          {column && (
+            <>
+              <span class="text-[var(--text-tertiary)]">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
+              </span>
+              <a href={`/columns/${column}`} class="text-[var(--link)] font-semibold uppercase tracking-wide text-xs hover:underline no-underline">{columnDisplayName}</a>
+            </>
+          )}
           <span class="text-[var(--text-tertiary)]">
             <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
           </span>

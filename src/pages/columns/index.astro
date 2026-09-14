@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../components/astro/BaseLayout.astro';
+import { getColumns } from '../../lib/columns';
+
+const columns = await getColumns();
+---
+
+<BaseLayout title="栏目" description="按栏目浏览文章">
+  <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-2">栏目</h1>
+  <p class="text-[var(--text-tertiary)] mb-10">{columns.length} 个栏目</p>
+
+  {columns.length === 0 ? (
+    <p class="text-[var(--text-tertiary)]">暂无栏目。</p>
+  ) : (
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {columns.map((col) => (
+        <a href={`/columns/${col.name}`} class="card p-6 no-underline group">
+          <h3 class="font-semibold text-[var(--heading)] mb-1 group-hover:text-[var(--primary)] transition-colors">
+            {col.displayName}
+          </h3>
+          {col.description && (
+            <p class="text-sm text-[var(--text-tertiary)] mb-3 line-clamp-2">{col.description}</p>
+          )}
+          <span class="chip">{col.postCount} 篇文章</span>
+        </a>
+      ))}
+    </div>
+  )}
+</BaseLayout>

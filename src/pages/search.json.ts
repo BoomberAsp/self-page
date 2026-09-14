@@ -10,6 +10,7 @@ export async function GET() {
     summary: p.data.summary ?? '',
     tags: p.data.tags,
     date: p.data.date.toISOString(),
+    column: p.id.includes('/') ? p.id.split('/')[0] : '',
   }));
 
   return new Response(JSON.stringify(index), {
