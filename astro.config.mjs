@@ -5,6 +5,8 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import { unified } from '@astrojs/markdown-remark';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { rehypeRewriteImg } from './src/plugins/rehype-rewrite-img';
 
 export default defineConfig({
@@ -17,7 +19,8 @@ export default defineConfig({
   ],
   markdown: {
     processor: unified({
-      rehypePlugins: [rehypeRewriteImg],
+      remarkPlugins: [remarkMath],
+      rehypePlugins: [rehypeKatex, rehypeRewriteImg],
     }),
   },
   site: 'https://oneweblog.cn',
