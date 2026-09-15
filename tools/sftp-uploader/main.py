@@ -1,7 +1,9 @@
 """OneWeblog SFTP 内容上传工具 — Windows GUI"""
 
+import datetime
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -53,6 +55,128 @@ def ensure_remote_dir(sftp: paramiko.SFTPClient, remote_path: str):
             sftp.stat(cur)
         except FileNotFoundError:
             sftp.mkdir(cur)
+
+
+# ── frontmatter 检查与生成 ─────────────────────────────────
+
+_FM_RE = re.compile(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*\r?\n?", re.DOTALL)
+
+
+def parse_frontmatter(text: str):
+    """Return (data dict | None, body, error str | None)."""
+    if not text.startswith("---"):
+        return None, text, None
+    m = _FM_RE.match(text)
+    if not m:
+        return None, text, "frontmatter 未正确闭合（缺少结束的 ---）"
+    raw, body = m.group(1), text[m.end():]
+    try:
+        import yaml  # type: ignore
+        data = yaml.safe_load(raw)
+        if data is None:
+            data = {}
+        if not isinstance(data, dict):
+            return None, body, "frontmatter 不是键值对形式"
+        return data, body, None
+    except ImportError:
+        # 简易回退解析（无 PyYAML 时）
+        data = {}
+        for line in raw.split("\n"):
+            if ":" in line:
+                k, v = line.split(":", 1)
+                data[k.strip()] = v.strip().strip('"').strip("'")
+        return data, body, None
+    except Exception as e:
+        return None, body, f"YAML 解析失败: {e}"
+
+
+def _valid_date(v) -> bool:
+    if isinstance(v, (datetime.date, datetime.datetime)):
+        return True
+    if isinstance(v, str):
+        try:
+            datetime.datetime.strptime(v.strip(), "%Y-%m-%d")
+            return True
+        except ValueError:
+            return False
+    return False
+
+
+def check_content_file(path: str) -> dict:
+    """Check a .md/.mdx file against the site's content schema (title/date required)."""
+    result = {"ok": False, "error": "", "missing": [], "data": {},
+              "body": "", "suggested_title": "", "has_h1": False}
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        try:
+            text = Path(path).read_text(encoding="gbk")
+        except Exception as e:
+            result["error"] = f"无法读取文件: {e}"
+            return result
+    except Exception as e:
+        result["error"] = f"无法读取文件: {e}"
+        return result
+
+    data, body, fm_err = parse_frontmatter(text)
+    result["body"] = body
+    if fm_err:
+        result["error"] = fm_err
+        return result
+    result["data"] = data or {}
+
+    missing = []
+    if data is None:
+        missing = ["title", "date"]
+    else:
+        t = data.get("title")
+        if not (isinstance(t, str) and t.strip()):
+            missing.append("title")
+        if not _valid_date(data.get("date")):
+            missing.append("date")
+    result["missing"] = missing
+
+    # 正文首个非空行若是 H1 → 可作 title 建议，并提供移除选项
+    for line in body.split("\n"):
+        s = line.strip()
+        if not s:
+            continue
+        if s.startswith("# "):
+            result["has_h1"] = True
+            result["suggested_title"] = s[2:].strip()
+        break
+
+    result["ok"] = not missing and not fm_err
+    return result
+
+
+def build_frontmatter(title: str, date_s: str, tags: list, summary: str) -> str:
+    """Serialize frontmatter; JSON strings are valid YAML double-quoted scalars."""
+    lines = ["---", f"title: {json.dumps(title, ensure_ascii=False)}", f"date: {date_s}"]
+    if tags:
+        lines.append(f"tags: {json.dumps(tags, ensure_ascii=False)}")
+    if summary:
+        lines.append(f"summary: {json.dumps(summary, ensure_ascii=False)}")
+    lines.append("---")
+    return "\n".join(lines) + "\n\n"
+
+
+def strip_leading_h1(body: str) -> str:
+    """Remove the first '# ' heading line (site convention: title lives in frontmatter)."""
+    lines = body.split("\n")
+    for i, line in enumerate(lines):
+        if not line.strip():
+            continue
+        if line.strip().startswith("# ") and not line.strip().startswith("##"):
+            lines = lines[:i] + lines[i + 1:]
+            while lines and i < len(lines) and not lines[i].strip():
+                lines.pop(i)
+        break
+    return "\n".join(lines)
+
+
+def is_url_safe_filename(name: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z0-9._\-]+", name))
 
 
 # ── main window ─────────────────────────────────────────────
@@ -531,6 +655,28 @@ class App(tk.Tk):
             target_dir = f"{REMOTE_CONTENT}/{target}/{subdir}" if subdir else f"{REMOTE_CONTENT}/{target}"
             display = f"{target}/{subdir}" if subdir else target
 
+        # 内容文件上传前检查 frontmatter（posts/notes 的 .md/.mdx 必须含 title+date）
+        if target in ("posts", "notes"):
+            for f in files:
+                name = os.path.basename(f)
+                if not is_url_safe_filename(name):
+                    self._log(f"⚠ 文件名含非 URL 安全字符（空格/顿号/中文等），建议改为小写字母、数字、连字符: {name}")
+            content_files = [f for f in files if f.lower().endswith((".md", ".mdx"))]
+            problems = [f for f in content_files if not check_content_file(f)["ok"]]
+            if problems:
+                self._log(f"检测到 {len(problems)} 个文件缺少有效 frontmatter，请在弹窗中补全（将写回本地原文件）")
+                dlg = FrontmatterDialog(self, problems)
+                self.wait_window(dlg)
+                if not dlg.fixed_all:
+                    self.status_var.set("已取消上传（frontmatter 未补全）")
+                    return
+                still = [f for f in problems if not check_content_file(f)["ok"]]
+                if still:
+                    messagebox.showerror("检查未通过", "以下文件仍缺少有效 frontmatter:\n" +
+                                         "\n".join(os.path.basename(f) for f in still))
+                    return
+                self._log("frontmatter 补全完成，已写回本地文件")
+
         self._cancel_upload = False
         self._last_upload_target = target
         self.status_var.set("正在上传...")
@@ -749,6 +895,150 @@ class App(tk.Tk):
                     "远程重建正在进行中！\n退出会断开连接，可能中断服务器上的构建\n（build 未完成则不会重启服务，网站仍运行旧版本）。\n确定要退出吗？"):
                 return
         self._disconnect()
+        self.destroy()
+
+
+# ── frontmatter 补全对话框 ──────────────────────────────────
+
+class FrontmatterDialog(tk.Toplevel):
+    """逐个补全缺失 frontmatter 的内容文件；保存即写回本地原文件。"""
+
+    def __init__(self, master, files: list):
+        super().__init__(master)
+        self.fixed_all = False
+        self._files = files
+        self._idx = 0
+
+        self.title("补全文章信息")
+        self.geometry("640x620")
+        self.resizable(False, False)
+        self.transient(master)
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self._cancel)
+
+        pad = {"padx": 12, "pady": 4}
+        self._header = ttk.Label(self, text="", font=("Microsoft YaHei UI", 11, "bold"))
+        self._header.pack(anchor=tk.W, **pad)
+        self._issue = ttk.Label(self, text="", foreground="#b00020", wraplength=600, justify=tk.LEFT)
+        self._issue.pack(anchor=tk.W, padx=12)
+
+        form = ttk.Frame(self)
+        form.pack(fill=tk.X, padx=12, pady=6)
+        self.title_var = tk.StringVar()
+        self.date_var = tk.StringVar()
+        self.tags_var = tk.StringVar()
+        self.summary_var = tk.StringVar()
+        self.strip_h1_var = tk.BooleanVar(value=True)
+
+        rows = [("标题 *", self.title_var, 58), ("日期 * (YYYY-MM-DD)", self.date_var, 16),
+                ("标签 (逗号分隔)", self.tags_var, 40), ("摘要 (可选)", self.summary_var, 58)]
+        for i, (label, var, width) in enumerate(rows):
+            ttk.Label(form, text=label).grid(row=i, column=0, sticky=tk.W, pady=3)
+            ttk.Entry(form, textvariable=var, width=width).grid(row=i, column=1, sticky=tk.W, padx=(8, 0), pady=3)
+        self._strip_cb = ttk.Checkbutton(form, text="移除正文开头重复的 # 标题（网站惯例：标题由 frontmatter 提供）",
+                                         variable=self.strip_h1_var)
+        self._strip_cb.grid(row=len(rows), column=0, columnspan=2, sticky=tk.W, pady=(4, 0))
+
+        ttk.Label(self, text="正文预览:").pack(anchor=tk.W, padx=12)
+        self._preview = tk.Text(self, height=10, state=tk.DISABLED, wrap=tk.WORD,
+                                font=("Consolas", 9), background="#f6f6f6")
+        self._preview.pack(fill=tk.BOTH, expand=True, padx=12, pady=(2, 6))
+
+        btns = ttk.Frame(self)
+        btns.pack(fill=tk.X, padx=12, pady=(0, 10))
+        self._prev_btn = ttk.Button(btns, text="上一个", command=self._prev)
+        self._prev_btn.pack(side=tk.LEFT)
+        ttk.Button(btns, text="取消上传", command=self._cancel).pack(side=tk.RIGHT, padx=(8, 0))
+        self._save_btn = ttk.Button(btns, text="保存并继续", command=self._save_current)
+        self._save_btn.pack(side=tk.RIGHT)
+
+        self._populate()
+
+    # ── 内部逻辑 ──
+
+    def _populate(self):
+        path = self._files[self._idx]
+        r = check_content_file(path)
+        self._header.configure(text=f"补全文章信息 ({self._idx + 1}/{len(self._files)})  —  {os.path.basename(path)}")
+
+        data = r["data"]
+        if r["error"]:
+            self._issue.configure(text=f"✗ {r['error']}（请手动修复该文件后重新上传，或取消）")
+            self._save_btn.configure(state=tk.DISABLED)
+        else:
+            miss = "、".join(r["missing"]) if r["missing"] else "格式校验"
+            self._issue.configure(text=f"缺少必填字段: {miss}（带 * 为必填）" if r["missing"] else "")
+            self._save_btn.configure(state=tk.NORMAL)
+
+        d = data.get("date")
+        if isinstance(d, (datetime.datetime, datetime.date)):
+            date_s = d.strftime("%Y-%m-%d")
+        elif isinstance(d, str) and d.strip():
+            date_s = d.strip()
+        else:
+            date_s = datetime.date.today().strftime("%Y-%m-%d")
+
+        self.title_var.set(str(data.get("title") or r["suggested_title"] or Path(path).stem))
+        self.date_var.set(date_s)
+        tags = data.get("tags") or []
+        self.tags_var.set(", ".join(str(t) for t in tags) if isinstance(tags, list) else str(tags))
+        self.summary_var.set(str(data.get("summary") or ""))
+        self.strip_h1_var.set(r["has_h1"])
+        self._strip_cb.configure(state=tk.NORMAL if r["has_h1"] else tk.DISABLED)
+
+        preview_lines = [ln for ln in r["body"].split("\n")[:14]]
+        self._preview.configure(state=tk.NORMAL)
+        self._preview.delete("1.0", tk.END)
+        self._preview.insert(tk.END, "\n".join(preview_lines))
+        self._preview.configure(state=tk.DISABLED)
+
+        self._prev_btn.configure(state=tk.NORMAL if self._idx > 0 else tk.DISABLED)
+        self._save_btn.configure(
+            text="保存并开始上传" if self._idx == len(self._files) - 1 else "保存并继续",
+            state=tk.DISABLED if r["error"] else tk.NORMAL)
+
+    def _save_current(self):
+        path = self._files[self._idx]
+        title = self.title_var.get().strip()
+        date_s = self.date_var.get().strip()
+        if not title:
+            messagebox.showwarning("提示", "标题不能为空", parent=self)
+            return
+        try:
+            datetime.datetime.strptime(date_s, "%Y-%m-%d")
+        except ValueError:
+            messagebox.showwarning("提示", "日期格式应为 YYYY-MM-DD，例如 2026-09-16", parent=self)
+            return
+        tags = [t.strip() for t in re.split(r"[,，、;；]", self.tags_var.get()) if t.strip()]
+        summary = self.summary_var.get().strip()
+
+        try:
+            text = Path(path).read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            text = Path(path).read_text(encoding="gbk")
+        _, body, err = parse_frontmatter(text)
+        if err:
+            messagebox.showerror("无法保存", f"该文件现有 frontmatter 解析失败:\n{err}", parent=self)
+            return
+        if self.strip_h1_var.get():
+            body = strip_leading_h1(body)
+        new_text = build_frontmatter(title, date_s, tags, summary) + body.lstrip("\n")
+        Path(path).write_text(new_text, encoding="utf-8", newline="\n")
+
+        if self._idx < len(self._files) - 1:
+            self._idx += 1
+            self._populate()
+        else:
+            self.fixed_all = True
+            self.destroy()
+
+    def _prev(self):
+        if self._idx > 0:
+            self._idx -= 1
+            self._populate()
+
+    def _cancel(self):
+        self.fixed_all = False
         self.destroy()
 
 
