@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import threading
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
@@ -13,6 +14,18 @@ import paramiko
 CONFIG_FILE = Path.home() / ".oneweblog-uploader.json"
 REMOTE_CONTENT = "/opt/oneweblog/src/content"
 REMOTE_IMAGES = "/opt/oneweblog/public/images"
+
+# 远程重建命令：build 成功后才 restart（&& 链保证失败时旧版本继续服务）
+# 末尾输出健康检查状态码与哨兵标记，供工具确认结果
+REBUILD_CMD = (
+    "bash -lc '"
+    "cd /opt/oneweblog && npx astro build 2>&1 && "
+    "pm2 restart oneweblog && sleep 2 && "
+    'echo "HEALTH: $(curl -s -o /dev/null -w %{http_code} http://127.0.0.1:4321/posts)" && '
+    "echo __REBUILD_OK__"
+    "'"
+)
+REBUILD_SENTINEL = "__REBUILD_OK__"
 
 
 # ── helpers ────────────────────────────────────────────────
@@ -57,7 +70,9 @@ class App(tk.Tk):
         self._connect_thread = None
         self._list_thread = None
         self._upload_thread = None
+        self._rebuild_thread = None
         self._cancel_upload = False
+        self._last_upload_target = ""
 
         self._build_ui()
         self._load_config()
@@ -95,8 +110,15 @@ class App(tk.Tk):
         # ── bottom bar ──
         bottom = ttk.Frame(self)
         bottom.pack(fill=tk.X, padx=8, pady=4)
-        ttk.Button(bottom, text="上传", command=self._upload).pack(side=tk.RIGHT, padx=(8, 0))
+        self.upload_btn = ttk.Button(bottom, text="上传", command=self._upload)
+        self.upload_btn.pack(side=tk.RIGHT, padx=(8, 0))
+        self.rebuild_btn = ttk.Button(bottom, text="仅重建", command=self._rebuild_remote)
+        self.rebuild_btn.pack(side=tk.RIGHT, padx=(8, 0))
         ttk.Button(bottom, text="刷新远端列表", command=self._list_remote).pack(side=tk.RIGHT, padx=4)
+
+        # auto-rebuild checkbox (left side; persisted in config)
+        self.auto_rebuild_var = tk.BooleanVar(value=load_config().get("auto_rebuild", True))
+        ttk.Checkbutton(bottom, text="上传后自动重建网站", variable=self.auto_rebuild_var).pack(side=tk.LEFT, padx=(4, 0))
 
         # upload target
         self.target_var = tk.StringVar(value="posts")
@@ -196,7 +218,7 @@ class App(tk.Tk):
         ttk.Button(btn_row, text="清空", command=self._clear_files).pack(side=tk.LEFT)
 
         # drag-drop hint
-        ttk.Label(f, text="提示：拖放 .mdx 文件到上方列表区域", foreground="gray").pack(anchor=tk.W, pady=(4, 0))
+        ttk.Label(f, text="提示：可添加 .md / .mdx 内容文件及图片等任意文件", foreground="gray").pack(anchor=tk.W, pady=(4, 0))
 
     def _build_log_panel(self, parent: ttk.Frame):
         f = ttk.LabelFrame(parent, text="日志", padding=8)
@@ -220,6 +242,7 @@ class App(tk.Tk):
             self.user_var.set(cfg.get("user", "ubuntu"))
             self.pass_var.set(cfg.get("password", ""))
             self.key_var.set(cfg.get("key_file", ""))
+            self.auto_rebuild_var.set(cfg.get("auto_rebuild", True))
 
     def _save_config(self):
         cfg = {
@@ -228,6 +251,7 @@ class App(tk.Tk):
             "user": self.user_var.get(),
             "password": self.pass_var.get(),
             "key_file": self.key_var.get(),
+            "auto_rebuild": self.auto_rebuild_var.get(),
         }
         save_config(cfg)
         self._log("配置已保存")
@@ -465,8 +489,8 @@ class App(tk.Tk):
 
     def _add_files(self):
         files = filedialog.askopenfilenames(
-            title="选择 .mdx 文件",
-            filetypes=[("MDX files", "*.mdx"), ("Markdown", "*.md"), ("All Files", "*.*")]
+            title="选择内容文件",
+            filetypes=[("Markdown", "*.md"), ("MDX files", "*.mdx"), ("All Files", "*.*")]
         )
         for f in files:
             if f not in self._get_file_list():
@@ -489,6 +513,10 @@ class App(tk.Tk):
             messagebox.showwarning("提示", "请先连接服务器")
             return
 
+        if self._rebuild_thread and self._rebuild_thread.is_alive():
+            messagebox.showwarning("提示", "远程重建正在进行中，请等待完成后再上传")
+            return
+
         files = self._get_file_list()
         if not files:
             messagebox.showwarning("提示", "请先添加待上传文件")
@@ -504,6 +532,7 @@ class App(tk.Tk):
             display = f"{target}/{subdir}" if subdir else target
 
         self._cancel_upload = False
+        self._last_upload_target = target
         self.status_var.set("正在上传...")
         self._log(f"开始上传 {len(files)} 个文件到 {display}/ ...")
 
@@ -571,7 +600,128 @@ class App(tk.Tk):
         self._list_remote()
 
         if success > 0:
-            self._log(f"已完成 {success} 个文件 → {display}/, 刷新页面即可查看")
+            self._log(f"已完成 {success} 个文件 → {display}/")
+            # 图片由 nginx 直接伺服，无需重建；posts/notes 内容需重建生效
+            if self._last_upload_target in ("posts", "notes"):
+                if self.auto_rebuild_var.get():
+                    self._rebuild_remote(reason="内容上传后自动重建")
+                else:
+                    self._log("提示：内容文件需重建网站才能生效（可点击「仅重建」）")
+
+    # ── remote rebuild ──────────────────────────────────────
+
+    def _rebuild_remote(self, reason: str = "手动触发"):
+        if not self.client or not self.client.get_transport() or not self.client.get_transport().is_active():
+            messagebox.showwarning("提示", "请先连接服务器")
+            return
+
+        if self._rebuild_thread and self._rebuild_thread.is_alive():
+            messagebox.showwarning("提示", "重建已在进行中")
+            return
+
+        if not messagebox.askyesno("确认重建", f"将在服务器上重新构建网站并重启服务。\n触发原因：{reason}\n\n继续？"):
+            return
+
+        self.upload_btn.configure(state=tk.DISABLED)
+        self.rebuild_btn.configure(state=tk.DISABLED, text="重建中...")
+        self.status_var.set(f"正在远程重建（{reason}）...")
+        self._log(f"── 远程重建开始（{reason}）──")
+
+        progress_win = tk.Toplevel(self)
+        progress_win.title("远程重建中")
+        progress_win.geometry("400x110")
+        progress_win.resizable(False, False)
+        progress_win.transient(self)
+        progress_win.grab_set()
+        progress_win.protocol("WM_DELETE_WINDOW", lambda: None)  # 重建期间不允许关闭
+
+        ttk.Label(progress_win, text="正在服务器上构建网站，约需 1-3 分钟...", padding=(12, 8)).pack()
+        rebuild_bar = ttk.Progressbar(progress_win, mode="indeterminate", length=360)
+        rebuild_bar.pack(padx=20, pady=(0, 8))
+        rebuild_bar.start(12)
+
+        def do_rebuild():
+            start = time.time()
+            lines: list[str] = []
+            health = ""
+            ok = False
+            err_msg = ""
+            try:
+                transport = self.client.get_transport()
+                chan = transport.open_session()
+                chan.settimeout(300)
+                chan.exec_command(REBUILD_CMD)
+                buf = b""
+
+                def pump() -> bool:
+                    """Read available stdout/stderr; return True if any data was read."""
+                    nonlocal buf, health, ok
+                    got = False
+                    if chan.recv_ready():
+                        buf += chan.recv(4096)
+                        got = True
+                    if chan.recv_stderr_ready():
+                        buf += chan.recv_stderr(4096)
+                        got = True
+                    while b"\n" in buf:
+                        line, buf = buf.split(b"\n", 1)
+                        text = line.decode("utf-8", "replace").rstrip()
+                        lines.append(text)
+                        if text.startswith("HEALTH:"):
+                            health = text.split(":", 1)[1].strip()
+                        if REBUILD_SENTINEL in text:
+                            ok = True
+                        self.after(0, lambda t=text: self._log(f"[server] {t}"))
+                    return got
+
+                while True:
+                    if pump():
+                        continue
+                    if chan.exit_status_ready():
+                        break
+                    time.sleep(0.2)
+                # drain remaining
+                while pump():
+                    pass
+                if buf:
+                    text = buf.decode("utf-8", "replace").rstrip()
+                    lines.append(text)
+                    if REBUILD_SENTINEL in text:
+                        ok = True
+                    self.after(0, lambda t=text: self._log(f"[server] {t}"))
+                exit_code = chan.recv_exit_status()
+                chan.close()
+                if not ok:
+                    err_msg = f"重建命令异常退出 (exit code {exit_code})"
+            except Exception as e:
+                err_msg = f"重建失败: {e}"
+            elapsed = time.time() - start
+            self.after(0, lambda: self._on_rebuild_done(
+                progress_win, ok, health, elapsed, err_msg, lines))
+
+        self._rebuild_thread = threading.Thread(target=do_rebuild, daemon=True)
+        self._rebuild_thread.start()
+
+    def _on_rebuild_done(self, progress_win: tk.Toplevel, ok: bool, health: str,
+                         elapsed: float, err_msg: str, lines: list):
+        progress_win.destroy()
+        self.upload_btn.configure(state=tk.NORMAL)
+        self.rebuild_btn.configure(state=tk.NORMAL, text="仅重建")
+
+        if ok:
+            self.status_var.set(f"重建成功 ({elapsed:.0f}s)，健康检查: HTTP {health or '?'}")
+            self._log(f"── 远程重建成功，用时 {elapsed:.0f}s，/posts 返回 HTTP {health or '?'} ──")
+            if health and health != "200":
+                messagebox.showwarning(
+                    "重建完成但健康检查异常",
+                    f"重建成功，但 /posts 返回 HTTP {health}。\n请到服务器检查 pm2 日志。")
+        else:
+            self.status_var.set("重建失败 — 网站仍运行旧版本")
+            self._log(f"── {err_msg}，用时 {elapsed:.0f}s ──")
+            tail = "\n".join(lines[-20:]) or "(无输出)"
+            messagebox.showerror(
+                "重建失败",
+                f"{err_msg}\n\nbuild 失败时不会重启服务，网站仍在运行旧版本。\n\n最后 20 行输出：\n{tail}")
 
     # ── log ─────────────────────────────────────────────────
 
@@ -593,6 +743,11 @@ class App(tk.Tk):
             if not messagebox.askyesno("确认", "上传正在进行中，确定要退出吗？"):
                 return
             self._cancel_upload = True
+        if self._rebuild_thread and self._rebuild_thread.is_alive():
+            if not messagebox.askyesno(
+                    "确认",
+                    "远程重建正在进行中！\n退出会断开连接，可能中断服务器上的构建\n（build 未完成则不会重启服务，网站仍运行旧版本）。\n确定要退出吗？"):
+                return
         self._disconnect()
         self.destroy()
 
