@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 import re
+import stat
 import sys
 import threading
 import time
@@ -197,6 +198,7 @@ class App(tk.Tk):
         self._rebuild_thread = None
         self._cancel_upload = False
         self._last_upload_target = ""
+        self._remote_subdirs: dict[str, list[str]] = {}
 
         self._build_ui()
         self._load_config()
@@ -240,16 +242,20 @@ class App(tk.Tk):
 
         self.target_var = tk.StringVar(value="posts")
         ttk.Label(row1, text="上传目标:").pack(side=tk.LEFT, padx=(0, 4))
-        ttk.Radiobutton(row1, text="博文 (posts)", variable=self.target_var, value="posts").pack(side=tk.LEFT, padx=4)
-        ttk.Radiobutton(row1, text="笔记 (notes)", variable=self.target_var, value="notes").pack(side=tk.LEFT, padx=4)
-        ttk.Radiobutton(row1, text="图片 (images)", variable=self.target_var, value="images").pack(side=tk.LEFT, padx=4)
+        ttk.Radiobutton(row1, text="博文 (posts)", variable=self.target_var, value="posts",
+                        command=self._refresh_subdir_candidates).pack(side=tk.LEFT, padx=4)
+        ttk.Radiobutton(row1, text="笔记 (notes)", variable=self.target_var, value="notes",
+                        command=self._refresh_subdir_candidates).pack(side=tk.LEFT, padx=4)
+        ttk.Radiobutton(row1, text="图片 (images)", variable=self.target_var, value="images",
+                        command=self._refresh_subdir_candidates).pack(side=tk.LEFT, padx=4)
 
-        # subdirectory entry (applies to all targets, e.g. column name for posts)
+        # subdirectory combobox (applies to all targets): 已有远端目录按输入补全，无匹配则视为新目录
         self.subdir_var = tk.StringVar(value="")
         ttk.Label(row1, text="子目录:").pack(side=tk.LEFT, padx=(20, 4))
-        self.subdir_entry = ttk.Entry(row1, textvariable=self.subdir_var, width=28)
-        self.subdir_entry.pack(side=tk.LEFT)
-        ttk.Label(row1, text="（可选，如栏目名 advanced-linear-algebra；远端自动创建）",
+        self.subdir_combo = ttk.Combobox(row1, textvariable=self.subdir_var, width=28)
+        self.subdir_combo.pack(side=tk.LEFT)
+        self.subdir_combo.bind("<KeyRelease>", lambda _: self._refresh_subdir_candidates())
+        ttk.Label(row1, text="（连接后按输入补全已有目录；无匹配上传时自动新建）",
                   foreground="gray").pack(side=tk.LEFT, padx=(8, 0))
 
         row2 = ttk.Frame(bottom)
@@ -584,38 +590,72 @@ class App(tk.Tk):
 
         self.status_var.set("正在加载远端文件列表...")
 
+        def collect_subdirs(base: str, prefix: str, depth: int) -> list:
+            """Recursively collect relative subdirectory paths (depth-limited)."""
+            out = []
+            if depth <= 0:
+                return out
+            try:
+                items = self.sftp.listdir_attr(base)
+            except FileNotFoundError:
+                return out
+            for attr in items:
+                if attr.st_mode is not None and stat.S_ISDIR(attr.st_mode):
+                    rel = f"{prefix}{attr.filename}"
+                    out.append(rel)
+                    out.extend(collect_subdirs(f"{base}/{attr.filename}", rel + "/", depth - 1))
+            return out
+
         def do_list():
             try:
                 lines = []
+                subdirs = {}
+                bases = {"posts": f"{REMOTE_CONTENT}/posts",
+                         "notes": f"{REMOTE_CONTENT}/notes",
+                         "images": REMOTE_IMAGES}
                 for folder in ("posts", "notes"):
-                    path = f"{REMOTE_CONTENT}/{folder}"
+                    path = bases[folder]
                     try:
                         items = self.sftp.listdir_attr(path)
                     except FileNotFoundError:
                         items = []
                     lines.append((folder, items))
+                    subdirs[folder] = collect_subdirs(path, "", 3)
                 # images directory — list subdirectories
                 try:
                     img_items = self.sftp.listdir_attr(REMOTE_IMAGES)
                 except FileNotFoundError:
                     img_items = []
                 lines.append(("images", img_items))
-                self.after(0, lambda: self._on_remote_listed(lines))
+                subdirs["images"] = collect_subdirs(REMOTE_IMAGES, "", 3)
+                self.after(0, lambda: self._on_remote_listed(lines, subdirs))
             except Exception as e:
                 self.after(0, lambda err=str(e): self._log(f"获取远端列表失败: {err}"))
 
         self._list_thread = threading.Thread(target=do_list, daemon=True)
         self._list_thread.start()
 
-    def _on_remote_listed(self, folders: list):
+    def _on_remote_listed(self, folders: list, subdirs: dict):
         self.remote_tree.delete(*self.remote_tree.get_children())
         for folder, items in folders:
             node = self.remote_tree.insert("", tk.END, text=folder + "/", open=True)
             for attr in sorted(items, key=lambda a: a.filename):
                 size = f"{attr.st_size / 1024:.0f} KB" if attr.st_size > 1024 else f"{attr.st_size} B"
                 self.remote_tree.insert(node, tk.END, text=attr.filename, values=(size,))
+        self._remote_subdirs = subdirs
+        self._refresh_subdir_candidates()
         self.status_var.set("就绪")
         self._log("远端文件列表已刷新")
+
+    def _refresh_subdir_candidates(self):
+        """Filter remote subdirectories of the current target by what the user typed."""
+        typed = self.subdir_var.get().strip().strip("/")
+        pool = self._remote_subdirs.get(self.target_var.get(), [])
+        if typed:
+            vals = [d for d in pool if typed.lower() in d.lower()]
+        else:
+            vals = list(pool)
+        self.subdir_combo.configure(values=sorted(vals)[:50])
 
     # ── file list ──────────────────────────────────────────
 
