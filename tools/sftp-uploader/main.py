@@ -244,18 +244,19 @@ class App(tk.Tk):
         self.auto_rebuild_var = tk.BooleanVar(value=load_config().get("auto_rebuild", True))
         ttk.Checkbutton(bottom, text="上传后自动重建网站", variable=self.auto_rebuild_var).pack(side=tk.LEFT, padx=(4, 0))
 
+        # subdirectory entry (applies to all targets, e.g. column name for posts)
+        # pack 顺序（RIGHT 后 pack 的更靠左）→ 视觉左到右: 上传目标: posts notes images  子目录: [entry]
+        self.subdir_var = tk.StringVar(value="")
+        self.subdir_entry = ttk.Entry(bottom, textvariable=self.subdir_var, width=22)
+        self.subdir_entry.pack(side=tk.RIGHT, padx=(4, 12))
+        ttk.Label(bottom, text="子目录:").pack(side=tk.RIGHT, padx=(4, 0))
+
         # upload target
         self.target_var = tk.StringVar(value="posts")
         ttk.Radiobutton(bottom, text="图片 (images)", variable=self.target_var, value="images").pack(side=tk.RIGHT, padx=4)
         ttk.Radiobutton(bottom, text="笔记 (notes)", variable=self.target_var, value="notes").pack(side=tk.RIGHT, padx=4)
         ttk.Radiobutton(bottom, text="博文 (posts)", variable=self.target_var, value="posts").pack(side=tk.RIGHT, padx=4)
         ttk.Label(bottom, text="上传目标:").pack(side=tk.RIGHT, padx=(16, 4))
-
-        # subdirectory entry (applies to all targets, e.g. column name for posts)
-        self.img_subdir_var = tk.StringVar(value="")
-        self.img_subdir_entry = ttk.Entry(bottom, textvariable=self.img_subdir_var, width=24)
-        self.img_subdir_entry.pack(side=tk.RIGHT, padx=4)
-        ttk.Label(bottom, text="子目录:").pack(side=tk.RIGHT, padx=4)
 
         # status bar
         self.status_var = tk.StringVar(value="就绪")
@@ -342,7 +343,8 @@ class App(tk.Tk):
         ttk.Button(btn_row, text="清空", command=self._clear_files).pack(side=tk.LEFT)
 
         # drag-drop hint
-        ttk.Label(f, text="提示：可添加 .md / .mdx 内容文件及图片等任意文件", foreground="gray").pack(anchor=tk.W, pady=(4, 0))
+        ttk.Label(f, text="提示：可添加 .md / .mdx 及图片等任意文件；配合底栏「子目录」可传到栏目目录（如 advanced-linear-algebra），远端目录自动创建",
+                  foreground="gray", wraplength=420, justify=tk.LEFT).pack(anchor=tk.W, pady=(4, 0))
 
     def _build_log_panel(self, parent: ttk.Frame):
         f = ttk.LabelFrame(parent, text="日志", padding=8)
@@ -647,7 +649,7 @@ class App(tk.Tk):
             return
 
         target = self.target_var.get()
-        subdir = self.img_subdir_var.get().strip().strip("/")
+        subdir = self.subdir_var.get().strip().strip("/")
         if target == "images":
             target_dir = f"{REMOTE_IMAGES}/{subdir}" if subdir else REMOTE_IMAGES
             display = f"images/{subdir}" if subdir else "images"
