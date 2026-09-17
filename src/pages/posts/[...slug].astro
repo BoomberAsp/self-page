@@ -96,7 +96,7 @@ function readingTime(body: string | undefined): number {
     <!-- Right TOC -->
     {headings.length > 1 && (
       <aside class="hidden xl:block w-48 shrink-0">
-        <div class="sticky top-12">
+        <div class="sticky top-12 max-h-[calc(100vh-6rem)] overflow-y-auto overscroll-contain pr-1">
           <h4 class="text-sm font-semibold text-[var(--text-secondary)] mb-3">目录</h4>
           <nav class="flex flex-col">
             {headings.filter(h => h.depth <= 3).map((h) => (

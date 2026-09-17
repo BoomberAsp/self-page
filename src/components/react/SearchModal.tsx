@@ -88,7 +88,7 @@ export default function SearchModal() {
 
       {open && (
         <div
-          class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]"
+          class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/50 backdrop-blur-[2px]"
           ref={modalRef}
           onClick={(e) => { if (e.target === modalRef.current) setOpen(false); }}
         >
