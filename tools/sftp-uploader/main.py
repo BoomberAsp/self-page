@@ -231,32 +231,38 @@ class App(tk.Tk):
         self._build_file_panel(right)
         self._build_log_panel(right)
 
-        # ── bottom bar ──
+        # ── bottom bar（两行：第一行目标+子目录，第二行勾选+按钮；单行在窄窗口会挤掉控件）──
         bottom = ttk.Frame(self)
         bottom.pack(fill=tk.X, padx=8, pady=4)
-        self.upload_btn = ttk.Button(bottom, text="上传", command=self._upload)
+
+        row1 = ttk.Frame(bottom)
+        row1.pack(fill=tk.X, pady=(0, 4))
+
+        self.target_var = tk.StringVar(value="posts")
+        ttk.Label(row1, text="上传目标:").pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Radiobutton(row1, text="博文 (posts)", variable=self.target_var, value="posts").pack(side=tk.LEFT, padx=4)
+        ttk.Radiobutton(row1, text="笔记 (notes)", variable=self.target_var, value="notes").pack(side=tk.LEFT, padx=4)
+        ttk.Radiobutton(row1, text="图片 (images)", variable=self.target_var, value="images").pack(side=tk.LEFT, padx=4)
+
+        # subdirectory entry (applies to all targets, e.g. column name for posts)
+        self.subdir_var = tk.StringVar(value="")
+        ttk.Label(row1, text="子目录:").pack(side=tk.LEFT, padx=(20, 4))
+        self.subdir_entry = ttk.Entry(row1, textvariable=self.subdir_var, width=28)
+        self.subdir_entry.pack(side=tk.LEFT)
+        ttk.Label(row1, text="（可选，如栏目名 advanced-linear-algebra；远端自动创建）",
+                  foreground="gray").pack(side=tk.LEFT, padx=(8, 0))
+
+        row2 = ttk.Frame(bottom)
+        row2.pack(fill=tk.X)
+        self.upload_btn = ttk.Button(row2, text="上传", command=self._upload)
         self.upload_btn.pack(side=tk.RIGHT, padx=(8, 0))
-        self.rebuild_btn = ttk.Button(bottom, text="仅重建", command=self._rebuild_remote)
+        self.rebuild_btn = ttk.Button(row2, text="仅重建", command=self._rebuild_remote)
         self.rebuild_btn.pack(side=tk.RIGHT, padx=(8, 0))
-        ttk.Button(bottom, text="刷新远端列表", command=self._list_remote).pack(side=tk.RIGHT, padx=4)
+        ttk.Button(row2, text="刷新远端列表", command=self._list_remote).pack(side=tk.RIGHT, padx=4)
 
         # auto-rebuild checkbox (left side; persisted in config)
         self.auto_rebuild_var = tk.BooleanVar(value=load_config().get("auto_rebuild", True))
-        ttk.Checkbutton(bottom, text="上传后自动重建网站", variable=self.auto_rebuild_var).pack(side=tk.LEFT, padx=(4, 0))
-
-        # subdirectory entry (applies to all targets, e.g. column name for posts)
-        # pack 顺序（RIGHT 后 pack 的更靠左）→ 视觉左到右: 上传目标: posts notes images  子目录: [entry]
-        self.subdir_var = tk.StringVar(value="")
-        self.subdir_entry = ttk.Entry(bottom, textvariable=self.subdir_var, width=22)
-        self.subdir_entry.pack(side=tk.RIGHT, padx=(4, 12))
-        ttk.Label(bottom, text="子目录:").pack(side=tk.RIGHT, padx=(4, 0))
-
-        # upload target
-        self.target_var = tk.StringVar(value="posts")
-        ttk.Radiobutton(bottom, text="图片 (images)", variable=self.target_var, value="images").pack(side=tk.RIGHT, padx=4)
-        ttk.Radiobutton(bottom, text="笔记 (notes)", variable=self.target_var, value="notes").pack(side=tk.RIGHT, padx=4)
-        ttk.Radiobutton(bottom, text="博文 (posts)", variable=self.target_var, value="posts").pack(side=tk.RIGHT, padx=4)
-        ttk.Label(bottom, text="上传目标:").pack(side=tk.RIGHT, padx=(16, 4))
+        ttk.Checkbutton(row2, text="上传后自动重建网站", variable=self.auto_rebuild_var).pack(side=tk.LEFT, padx=(4, 0))
 
         # status bar
         self.status_var = tk.StringVar(value="就绪")
