@@ -6,13 +6,11 @@ const notes = [
     title: '数学分析笔记',
     file: '/files/数学分析笔记.pdf',
     desc: '数学分析课程手写笔记，涵盖极限、连续、微分、积分等核心内容。',
-    icon: '📐',
   },
   {
     title: '运筹与优化笔记',
     file: '/files/运筹与优化笔记.pdf',
     desc: '运筹学与最优化方法手写笔记，涵盖线性规划、非线性规划、动态规划等内容。',
-    icon: '📊',
   },
 ];
 ---
@@ -24,7 +22,6 @@ const notes = [
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {notes.map((note) => (
       <div class="card p-6 flex flex-col">
-        <div class="text-3xl mb-4">{note.icon}</div>
         <h2 class="text-lg font-semibold text-[var(--heading)] mb-2">{note.title}</h2>
         <p class="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed flex-1">{note.desc}</p>
         <div class="flex items-center gap-3">

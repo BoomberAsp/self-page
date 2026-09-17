@@ -8,26 +8,16 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
   .slice(0, 5);
 
 const navCards = [
-  { href: '/posts', icon: '📝', title: '博文', desc: '学习笔记与技术文章' },
-  { href: '/projects', icon: '🚀', title: '项目', desc: '参与的作品与产品' },
-  { href: '/download', icon: '📥', title: '下载', desc: '笔记与资料下载' },
+  { href: '/posts', title: '博文', desc: '学习笔记与技术文章' },
+  { href: '/projects', title: '项目', desc: '参与的作品与产品' },
+  { href: '/download', title: '下载', desc: '笔记与资料下载' },
 ];
 ---
 
 <BaseLayout>
-  <section class="mb-14">
-    <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-4">
-      你好，我是...
-    </h1>
-    <p class="text-lg text-[var(--text-secondary)] leading-relaxed max-w-[600px]">
-      欢迎来到我的个人网站。这里记录我的学习笔记、技术博文，以及我参与的项目。
-    </p>
-  </section>
-
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-14">
     {navCards.map((card) => (
       <a href={card.href} class="card p-6 no-underline group">
-        <div class="text-2xl mb-3">{card.icon}</div>
         <h3 class="font-semibold text-[var(--heading)] mb-1 group-hover:text-[var(--primary)] transition-colors">{card.title}</h3>
         <p class="text-sm text-[var(--text-tertiary)]">{card.desc}</p>
       </a>
