@@ -4,6 +4,7 @@ import 'katex/dist/katex.css';
 import SEO from './SEO.astro';
 import ThemeToggle from '../react/ThemeToggle';
 import MobileNav from '../react/MobileNav';
+import WidthToggle from '../react/WidthToggle';
 import Sidebar from '../react/Sidebar';
 import SearchModal from '../react/SearchModal';
 import { getColumns } from '../../lib/columns';
@@ -36,10 +37,13 @@ const columns = (await getColumns()).map((c) => ({
       var s = localStorage.getItem('theme');
       var p = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (s === 'dark' || (!s && p)) document.documentElement.classList.add('dark');
+      var w = localStorage.getItem('contentWidth');
+      if (w) document.documentElement.style.setProperty('--content-width', w);
     })();
   </script>
 
   <MobileNav client:load />
+  <WidthToggle client:load />
 
   <div class="flex min-h-screen">
     <!-- Sidebar -->
@@ -65,7 +69,7 @@ const columns = (await getColumns()).map((c) => ({
 
     <!-- Main -->
     <main class={`flex-1 min-w-0 px-5 py-8 lg:px-12 lg:py-12 pt-16 lg:pt-12 ${bodyClass ?? ''}`}>
-      <div class="mx-auto max-w-4xl">
+      <div class="mx-auto max-w-[var(--content-width)]">
         <slot />
       </div>
     </main>
