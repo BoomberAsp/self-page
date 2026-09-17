@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../components/astro/BaseLayout.astro';
+import { titleHtml } from '../../lib/math-title';
 
 const { tag } = Astro.params;
 const posts = (await getCollection('posts', ({ data }) => !data.draft))
@@ -17,7 +18,7 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
   <div class="space-y-3">
     {posts.map((post) => (
       <a href={`/posts/${post.id}`} class="card block px-6 py-5 no-underline">
-        <h2 class="text-xl font-semibold text-[var(--heading)] mb-1.5">{post.data.title}</h2>
+        <h2 class="text-xl font-semibold text-[var(--heading)] mb-1.5" set:html={titleHtml(post.data.title)}></h2>
         {post.data.summary && (
           <p class="text-[var(--text-secondary)] line-clamp-2 mb-3">{post.data.summary}</p>
         )}

@@ -5,6 +5,7 @@ import { Search, X } from 'lucide-react';
 interface PostIndex {
   id: string;
   title: string;
+  titleHtml: string;
   summary: string;
   tags: string[];
   date: string;
@@ -124,7 +125,8 @@ export default function SearchModal() {
                     onClick={() => setOpen(false)}
                     class="flex flex-col px-3 py-2.5 rounded-lg hover:bg-[var(--border-light)] transition-colors no-underline"
                   >
-                    <span class="text-sm font-medium text-[var(--heading)]">{post.title}</span>
+                    {/* titleHtml 由服务端生成（纯文本转义 + KaTeX 输出），可安全注入 */}
+                    <span class="text-sm font-medium text-[var(--heading)]" dangerouslySetInnerHTML={{ __html: post.titleHtml }} />
                     {post.summary && (
                       <span class="text-xs text-[var(--text-tertiary)] mt-0.5 line-clamp-1">{post.summary}</span>
                     )}

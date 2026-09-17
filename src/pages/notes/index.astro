@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../components/astro/BaseLayout.astro';
 import { getCollection } from 'astro:content';
+import { titleHtml } from '../../lib/math-title';
 
 const notes = (await getCollection('notes'))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
@@ -23,8 +24,7 @@ const typeLabel = (t: string) => t === 'pdf' ? 'PDF 手写' : 'Markdown';
             <span class="text-xs text-[var(--text-tertiary)]">{note.data.subject}</span>
           )}
         </div>
-        <h2 class="text-lg font-semibold text-[var(--heading)] mb-2 group-hover:text-[var(--primary)] transition-colors">
-          {note.data.title}
+        <h2 class="text-lg font-semibold text-[var(--heading)] mb-2 group-hover:text-[var(--primary)] transition-colors" set:html={titleHtml(note.data.title)}>
         </h2>
         <p class="text-sm text-[var(--text-secondary)] leading-relaxed flex-1">
           {note.data.summary}

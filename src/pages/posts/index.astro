@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../components/astro/BaseLayout.astro';
 import { getCollection } from 'astro:content';
+import { titleHtml } from '../../lib/math-title';
 
 const pageSize = 8;
 const pageNum = Math.max(1, Number(Astro.url.searchParams.get('page')) || 1);
@@ -40,7 +41,7 @@ const tags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
     <div class="space-y-3">
       {posts.map((post) => (
         <a href={`/posts/${post.id}`} class="card block px-6 py-5 no-underline">
-          <h2 class="text-xl font-semibold text-[var(--heading)] mb-1.5">{post.data.title}</h2>
+          <h2 class="text-xl font-semibold text-[var(--heading)] mb-1.5" set:html={titleHtml(post.data.title)}></h2>
           {post.data.summary && (
             <p class="text-[var(--text-secondary)] line-clamp-2 mb-3">{post.data.summary}</p>
           )}

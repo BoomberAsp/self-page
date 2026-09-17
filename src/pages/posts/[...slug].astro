@@ -3,6 +3,7 @@ import { getCollection, getEntry, render } from 'astro:content';
 import BaseLayout from '../../components/astro/BaseLayout.astro';
 import CopyButton from '../../components/react/CopyButton';
 import { getColumnName } from '../../lib/columns';
+import { titleHtml } from '../../lib/math-title';
 
 const { slug } = Astro.params;
 const post = await getEntry('posts', slug!);
@@ -48,8 +49,7 @@ function readingTime(body: string | undefined): number {
           </span>
         </div>
 
-        <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-5 leading-tight">
-          {post.data.title}
+        <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-5 leading-tight" set:html={titleHtml(post.data.title)}>
         </h1>
 
         <div class="flex flex-wrap items-center gap-3 text-[var(--text-tertiary)] text-sm">
@@ -80,13 +80,13 @@ function readingTime(body: string | undefined): number {
           {prev ? (
             <a href={`/posts/${prev.id}`} class="card block px-5 py-4 no-underline col-start-1">
               <span class="text-xs text-[var(--text-tertiary)]">上一篇</span>
-              <span class="block text-sm font-medium text-[var(--text)] mt-0.5 truncate">{prev.data.title}</span>
+              <span class="block text-sm font-medium text-[var(--text)] mt-0.5 truncate" set:html={titleHtml(prev.data.title)}></span>
             </a>
           ) : <div />}
           {next ? (
             <a href={`/posts/${next.id}`} class="card block px-5 py-4 no-underline text-right col-start-2">
               <span class="text-xs text-[var(--text-tertiary)]">下一篇</span>
-              <span class="block text-sm font-medium text-[var(--text)] mt-0.5 truncate">{next.data.title}</span>
+              <span class="block text-sm font-medium text-[var(--text)] mt-0.5 truncate" set:html={titleHtml(next.data.title)}></span>
             </a>
           ) : <div />}
         </nav>

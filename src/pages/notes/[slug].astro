@@ -2,6 +2,7 @@
 import { getCollection, getEntry, render } from 'astro:content';
 import BaseLayout from '../../components/astro/BaseLayout.astro';
 import CopyButton from '../../components/react/CopyButton';
+import { titleHtml } from '../../lib/math-title';
 
 const { slug } = Astro.params;
 const note = await getEntry('notes', slug!);
@@ -29,8 +30,7 @@ const fileSize = note.data.file_size ?? '';
       </span>
     </div>
 
-    <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-5 leading-tight">
-      {note.data.title}
+    <h1 class="text-4xl lg:text-5xl font-bold text-[var(--heading)] tracking-tight mb-5 leading-tight" set:html={titleHtml(note.data.title)}>
     </h1>
 
     <div class="flex flex-wrap items-center gap-3 text-[var(--text-tertiary)] text-sm">
