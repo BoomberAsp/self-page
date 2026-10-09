@@ -20,11 +20,21 @@ REMOTE_IMAGES = "/opt/oneweblog/public/images"
 
 # 远程重建命令：build 成功后才 restart（&& 链保证失败时旧版本继续服务）
 # 末尾输出健康检查状态码与哨兵标记，供工具确认结果
+# 注意 1：网站进程由 root 的 pm2 托管，而工具以 ubuntu 连接（有免密 sudo）。
+#   裸 `pm2 restart` 会打到 ubuntu 自己的空 pm2 daemon → "Process or Namespace not found"，
+#   必须用 sudo；进程意外不存在时回退为 start（与 scripts/update.sh 逻辑一致）。
+# 注意 2：pm2 的输出必须先重定向到普通文件再 cat 回来。若 pm2 拉起的 node 进程
+#   直接继承 SSH 通道管道，sshd 会一直等管道 EOF 而不发 exit-status，客户端将
+#   永远等不到退出码（实测挂起 >10 分钟）。curl 加 -m 15 防止健康检查悬挂。
 REBUILD_CMD = (
     "bash -lc '"
     "cd /opt/oneweblog && npx astro build 2>&1 && "
-    "pm2 restart oneweblog && sleep 2 && "
-    'echo "HEALTH: $(curl -s -o /dev/null -w %{http_code} http://127.0.0.1:4321/posts)" && '
+    "{ (sudo -n pm2 restart oneweblog || "
+    "(sudo -n pm2 start npm --name oneweblog -- run start && sudo -n pm2 save)) "
+    ">/tmp/oneweblog-pm2.log 2>&1 </dev/null; PM2RC=$?; cat /tmp/oneweblog-pm2.log; "
+    "[ $PM2RC -eq 0 ]; } && "
+    "sleep 2 && "
+    'echo "HEALTH: $(curl -s -m 15 -o /dev/null -w %{http_code} http://127.0.0.1:4321/posts)" && '
     "echo __REBUILD_OK__"
     "'"
 )
@@ -46,16 +56,21 @@ def save_config(data: dict):
     CONFIG_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
-def ensure_remote_dir(sftp: paramiko.SFTPClient, remote_path: str):
-    """Recursively create remote directory like `mkdir -p`."""
-    dirs = remote_path.strip("/").split("/")
-    cur = ""
-    for d in dirs:
-        cur += "/" + d
-        try:
-            sftp.stat(cur)
-        except FileNotFoundError:
-            sftp.mkdir(cur)
+def ensure_remote_dir(sftp: paramiko.SFTPClient, remote_path: str, lock: threading.Lock):
+    """Recursively create remote directory like `mkdir -p`.
+
+    整个 mkdir -p 过程持锁执行：paramiko SFTPClient 不支持多线程并发请求
+    （并发时响应包会被其它线程吞掉导致永久阻塞），所有 sftp 调用必须串行化。
+    """
+    with lock:
+        dirs = remote_path.strip("/").split("/")
+        cur = ""
+        for d in dirs:
+            cur += "/" + d
+            try:
+                sftp.stat(cur)
+            except FileNotFoundError:
+                sftp.mkdir(cur)
 
 
 # ── frontmatter 检查与生成 ─────────────────────────────────
@@ -199,6 +214,9 @@ class App(tk.Tk):
         self._cancel_upload = False
         self._last_upload_target = ""
         self._remote_subdirs: dict[str, list[str]] = {}
+        # paramiko SFTPClient 线程不安全（并发同步请求会互相吞响应导致永久挂起），
+        # 所有 sftp 调用（列表线程 / 上传线程 / 懒加载展开线程）必须经此锁串行化
+        self._sftp_lock = threading.Lock()
 
         self._build_ui()
         self._load_config()
@@ -327,10 +345,15 @@ class App(tk.Tk):
         self.remote_tree.heading("size", text="大小")
         self.remote_tree.column("size", width=80, anchor=tk.E)
         self.remote_tree.pack(fill=tk.BOTH, expand=True)
+        # 目录懒加载：展开时按需拉取该层内容，可浏览任意深度
+        self.remote_tree.bind("<<TreeviewOpen>>", self._on_tree_open)
 
         scrollbar = ttk.Scrollbar(self.remote_tree, orient=tk.VERTICAL, command=self.remote_tree.yview)
         self.remote_tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        ttk.Label(f, text="提示：目录可逐级展开（点击 ▶ 按需加载，支持任意深度）",
+                  foreground="gray").pack(anchor=tk.W, pady=(4, 0))
 
     def _build_file_panel(self, parent: ttk.Frame):
         f = ttk.LabelFrame(parent, text="待上传文件", padding=8)
@@ -549,10 +572,33 @@ class App(tk.Tk):
     def _on_connected(self, client: paramiko.SSHClient, sftp: paramiko.SFTPClient, host: str):
         self.client = client
         self.sftp = sftp
+        # keepalive：防止 NAT/防火墙静默丢弃空闲连接（掉线后 paramiko 会尽快抛错而非永久阻塞）
+        try:
+            transport = client.get_transport()
+            if transport:
+                transport.set_keepalive(30)
+            chan = sftp.get_channel()
+            if chan:
+                chan.settimeout(120)  # 兜底：网络半死时单个 sftp 请求最多阻塞 120s
+        except Exception:
+            pass
         self.connect_btn.configure(text="已连接", state=tk.DISABLED)
         self.status_var.set(f"已连接 {host}")
         self._log(f"已连接到 {host}")
         self._list_remote()
+
+    def _connection_alive(self) -> bool:
+        """传输层是否仍然活跃（keepalive 掉线后会变为 False）。"""
+        if not self.sftp or not self.client:
+            return False
+        t = self.client.get_transport()
+        return bool(t and t.is_active())
+
+    def _handle_dead_connection(self):
+        """连接已死：复位 UI 并提示用户重连。"""
+        self._disconnect()
+        self.status_var.set("连接已断开")
+        messagebox.showwarning("提示", "与服务器的连接已断开，请重新点击「连接」")
 
     def _on_connect_error(self, err: str):
         self.connect_btn.configure(state=tk.NORMAL, text="连接")
@@ -587,8 +633,16 @@ class App(tk.Tk):
     def _list_remote(self):
         if not self.sftp:
             return
+        if self._list_thread and self._list_thread.is_alive():
+            return  # 上一次刷新尚未完成，避免重复遍历
 
         self.status_var.set("正在加载远端文件列表...")
+
+        def locked_listdir(path: str):
+            with self._sftp_lock:
+                if not self.sftp:
+                    return []
+                return self.sftp.listdir_attr(path)
 
         def collect_subdirs(base: str, prefix: str, depth: int) -> list:
             """Recursively collect relative subdirectory paths (depth-limited)."""
@@ -596,7 +650,7 @@ class App(tk.Tk):
             if depth <= 0:
                 return out
             try:
-                items = self.sftp.listdir_attr(base)
+                items = locked_listdir(base)
             except FileNotFoundError:
                 return out
             for attr in items:
@@ -616,14 +670,14 @@ class App(tk.Tk):
                 for folder in ("posts", "notes"):
                     path = bases[folder]
                     try:
-                        items = self.sftp.listdir_attr(path)
+                        items = locked_listdir(path)
                     except FileNotFoundError:
                         items = []
                     lines.append((folder, items))
                     subdirs[folder] = collect_subdirs(path, "", 3)
                 # images directory — list subdirectories
                 try:
-                    img_items = self.sftp.listdir_attr(REMOTE_IMAGES)
+                    img_items = locked_listdir(REMOTE_IMAGES)
                 except FileNotFoundError:
                     img_items = []
                 lines.append(("images", img_items))
@@ -635,17 +689,105 @@ class App(tk.Tk):
         self._list_thread = threading.Thread(target=do_list, daemon=True)
         self._list_thread.start()
 
+    # 树的 iid 直接使用远端绝对路径（天然唯一），目录懒加载展开
+    _BASE_OF_TARGET = None  # 延迟到实例化后由 _target_bases() 提供
+
+    def _target_bases(self) -> dict:
+        return {"posts": f"{REMOTE_CONTENT}/posts",
+                "notes": f"{REMOTE_CONTENT}/notes",
+                "images": REMOTE_IMAGES}
+
     def _on_remote_listed(self, folders: list, subdirs: dict):
         self.remote_tree.delete(*self.remote_tree.get_children())
+        bases = self._target_bases()
         for folder, items in folders:
-            node = self.remote_tree.insert("", tk.END, text=folder + "/", open=True)
-            for attr in sorted(items, key=lambda a: a.filename):
-                size = f"{attr.st_size / 1024:.0f} KB" if attr.st_size > 1024 else f"{attr.st_size} B"
-                self.remote_tree.insert(node, tk.END, text=attr.filename, values=(size,))
+            base = bases.get(folder, folder)
+            node = self.remote_tree.insert("", tk.END, iid=base, text=folder + "/", open=True)
+            self._insert_entries(node, base, items)
         self._remote_subdirs = subdirs
         self._refresh_subdir_candidates()
         self.status_var.set("就绪")
         self._log("远端文件列表已刷新")
+
+    @staticmethod
+    def _fmt_size(attr) -> str:
+        if attr.st_size is None:
+            return ""
+        return f"{attr.st_size / 1024:.0f} KB" if attr.st_size > 1024 else f"{attr.st_size} B"
+
+    def _insert_entries(self, parent_iid: str, parent_path: str, items: list):
+        """把一层 listdir_attr 结果插入树中；子目录带占位节点，展开时懒加载。"""
+        def is_dir(a):
+            return a.st_mode is not None and stat.S_ISDIR(a.st_mode)
+
+        for attr in sorted(items, key=lambda a: a.filename):
+            path = f"{parent_path}/{attr.filename}"
+            if self.remote_tree.exists(path):
+                continue
+            if is_dir(attr):
+                node = self.remote_tree.insert(parent_iid, tk.END, iid=path,
+                                               text=attr.filename + "/")
+                # 占位子节点使其可展开；展开事件触发后才真正 listdir
+                self.remote_tree.insert(node, tk.END, iid=path + "@@loading",
+                                        text="（展开加载…）")
+            else:
+                self.remote_tree.insert(parent_iid, tk.END, iid=path,
+                                        text=attr.filename, values=(self._fmt_size(attr),))
+
+    def _on_tree_open(self, _event=None):
+        item = self.remote_tree.focus()
+        if not item:
+            return
+        children = self.remote_tree.get_children(item)
+        if children != (item + "@@loading",):
+            return  # 已加载过（或非懒加载节点）
+        self.remote_tree.delete(children[0])
+        threading.Thread(target=self._populate_dir, args=(item,), daemon=True).start()
+
+    def _populate_dir(self, path: str):
+        try:
+            with self._sftp_lock:
+                if not self.sftp:
+                    return
+                items = self.sftp.listdir_attr(path)
+        except Exception as e:
+            self.after(0, lambda p=path, err=str(e): self._log(f"列目录 {p} 失败: {err}"))
+            self.after(0, lambda p=path: self._restore_placeholder(p))
+            return
+        self.after(0, lambda p=path, its=items: self._on_dir_populated(p, its))
+
+    def _restore_placeholder(self, path: str):
+        """加载失败后放回占位节点，允许折叠再展开重试。"""
+        if self.remote_tree.exists(path) and not self.remote_tree.get_children(path):
+            self.remote_tree.insert(path, tk.END, iid=path + "@@loading", text="（展开加载…）")
+
+    def _on_dir_populated(self, path: str, items: list):
+        if not self.remote_tree.exists(path):
+            return  # 树已被刷新/重建，丢弃过期结果
+        self._insert_entries(path, path, items)
+        if not items:
+            self.remote_tree.insert(path, tk.END, text="（空目录）")
+        self._merge_subdir_candidates(path)
+
+    def _merge_subdir_candidates(self, path: str):
+        """把展开时新发现的子目录并入底栏「子目录」补全候选池（可超出初始扫描深度）。"""
+        for target, base in self._target_bases().items():
+            if not (path == base or path.startswith(base + "/")):
+                continue
+            rel = path[len(base) + 1:] if path != base else ""
+            pool = self._remote_subdirs.setdefault(target, [])
+            changed = False
+            for child_iid in self.remote_tree.get_children(path):
+                if not self.remote_tree.item(child_iid, "text").endswith("/"):
+                    continue
+                name = child_iid.rstrip("/").rsplit("/", 1)[-1]
+                sub = f"{rel}/{name}" if rel else name
+                if sub not in pool:
+                    pool.append(sub)
+                    changed = True
+            if changed:
+                self._refresh_subdir_candidates()
+            break
 
     def _refresh_subdir_candidates(self):
         """Filter remote subdirectories of the current target by what the user typed."""
@@ -681,8 +823,11 @@ class App(tk.Tk):
     # ── upload ─────────────────────────────────────────────
 
     def _upload(self):
-        if not self.sftp:
-            messagebox.showwarning("提示", "请先连接服务器")
+        if not self._connection_alive():
+            if self.client or self.sftp:
+                self._handle_dead_connection()  # 连接曾建立但已掉线 → 复位 UI 提示重连
+            else:
+                messagebox.showwarning("提示", "请先连接服务器")
             return
 
         if self._rebuild_thread and self._rebuild_thread.is_alive():
@@ -750,9 +895,9 @@ class App(tk.Tk):
         cancel_btn.pack(pady=(4, 8))
 
         def do_upload():
-            # ensure target directory exists
+            # ensure target directory exists（持锁执行，避免与列表线程并发损坏 sftp 协议状态）
             try:
-                ensure_remote_dir(self.sftp, target_dir)
+                ensure_remote_dir(self.sftp, target_dir, self._sftp_lock)
             except Exception as e:
                 self.after(0, lambda err=str(e): self._log(f"创建远程目录失败: {err}"))
                 self.after(0, lambda: self._on_upload_done([], progress_win, display))
@@ -771,10 +916,15 @@ class App(tk.Tk):
                 self.after(0, lambda v=i + 1: progress_bar.configure(value=v))
 
                 try:
-                    self.sftp.put(filepath, remote_path)
+                    with self._sftp_lock:
+                        self.sftp.put(filepath, remote_path)
                     results.append(("成功", filename, remote_path))
                 except Exception as e:
                     results.append(("失败", filename, str(e)))
+                    if not self._connection_alive():
+                        # 连接已断 → 快速失败，不再逐个文件空等超时
+                        self.after(0, lambda: self._log("连接已断开，中止剩余文件上传"))
+                        break
 
             self.after(0, lambda d=display: self._on_upload_done(results, progress_win, d))
 
@@ -805,8 +955,11 @@ class App(tk.Tk):
     # ── remote rebuild ──────────────────────────────────────
 
     def _rebuild_remote(self, reason: str = "手动触发"):
-        if not self.client or not self.client.get_transport() or not self.client.get_transport().is_active():
-            messagebox.showwarning("提示", "请先连接服务器")
+        if not self._connection_alive():
+            if self.client or self.sftp:
+                self._handle_dead_connection()
+            else:
+                messagebox.showwarning("提示", "请先连接服务器")
             return
 
         if self._rebuild_thread and self._rebuild_thread.is_alive():
@@ -868,10 +1021,20 @@ class App(tk.Tk):
                         self.after(0, lambda t=text: self._log(f"[server] {t}"))
                     return got
 
+                # 看门狗：远端子进程若继承通道管道，sshd 可能永远不发 exit-status
+                # （实测挂起 >10 分钟）。收到成功哨兵后短等即收尾；长时间无任何
+                # 输出也中止等待，避免进度框永久卡死。
+                last_activity = time.time()
                 while True:
                     if pump():
+                        last_activity = time.time()
                         continue
                     if chan.exit_status_ready():
+                        break
+                    if ok and time.time() - last_activity > 10:
+                        break  # 哨兵已收到，无需再等退出码
+                    if time.time() - last_activity > 120:
+                        err_msg = "远程命令连续 120 秒无输出且未退出，已停止等待（以上方日志为准）"
                         break
                     time.sleep(0.2)
                 # drain remaining
@@ -883,9 +1046,9 @@ class App(tk.Tk):
                     if REBUILD_SENTINEL in text:
                         ok = True
                     self.after(0, lambda t=text: self._log(f"[server] {t}"))
-                exit_code = chan.recv_exit_status()
+                exit_code = chan.recv_exit_status() if chan.exit_status_ready() else -1
                 chan.close()
-                if not ok:
+                if not ok and not err_msg:
                     err_msg = f"重建命令异常退出 (exit code {exit_code})"
             except Exception as e:
                 err_msg = f"重建失败: {e}"

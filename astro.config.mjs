@@ -8,6 +8,7 @@ import { unified } from '@astrojs/markdown-remark';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { rehypeRewriteImg } from './src/plugins/rehype-rewrite-img';
+import { remarkSingleLineDisplayMath } from './src/plugins/remark-single-line-display-math';
 
 export default defineConfig({
   output: 'server',
@@ -19,7 +20,7 @@ export default defineConfig({
   ],
   markdown: {
     processor: unified({
-      remarkPlugins: [remarkMath],
+      remarkPlugins: [remarkMath, remarkSingleLineDisplayMath],
       rehypePlugins: [rehypeKatex, rehypeRewriteImg],
     }),
   },
