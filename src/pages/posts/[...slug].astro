@@ -20,7 +20,12 @@ const next = idx < allPosts.length - 1 ? allPosts[idx + 1] : null;
 const column = slug?.includes('/') ? slug.split('/')[0] : null;
 const columnDisplayName = column ? getColumnName(column) : null;
 
-const { Content, headings } = await render(post);
+const { Content, headings, remarkPluginFrontmatter } = await render(post);
+
+// rehypeHeadingMathToc 生成的干净 TOC（公式还原为 $tex$，slug 已规整）；
+// 内置 headings 的 text 含 KaTeX 三份文本拼接的乱码，仅作回退
+const tocHeadings: { depth: number; slug: string; text: string }[] =
+  remarkPluginFrontmatter?.__tocHeadings ?? headings;
 
 function readingTime(body: string | undefined): number {
   if (!body) return 1;
@@ -94,19 +99,18 @@ function readingTime(body: string | undefined): number {
     </article>
 
     <!-- Right TOC -->
-    {headings.length > 1 && (
+    {tocHeadings.length > 1 && (
       <aside class="hidden xl:block w-48 shrink-0">
         <div class="sticky top-12 max-h-[calc(100vh-6rem)] overflow-y-auto overscroll-contain pr-1">
           <h4 class="text-sm font-semibold text-[var(--text-secondary)] mb-3">目录</h4>
           <nav class="flex flex-col">
-            {headings.filter(h => h.depth <= 3).map((h) => (
+            {tocHeadings.filter(h => h.depth <= 3).map((h) => (
               <a
                 href={`#${h.slug}`}
                 class="toc-link"
                 style={`padding-left: ${0.5 + (h.depth - 2) * 0.5}rem`}
-              >
-                {h.text}
-              </a>
+                set:html={titleHtml(h.text)}
+              />
             ))}
           </nav>
         </div>

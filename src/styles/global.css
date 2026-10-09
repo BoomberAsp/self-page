@@ -217,7 +217,12 @@ body {
    整体略调小公式，使上下标与正文有清晰的字号层级 */
 .prose .katex { font-size: 1.08em; }
 
-/* 上下标缩放比例：0.7em -> 0.62em（示例） */
+/* 上下标缩放比例：0.7em -> 0.5em
+   当前全站统一 katex 0.16.x，类名为 .sizing；
+   .katex-sizing / .fontsize-ensurer 为升级 0.18+（类名加前缀）时的兜底。
+   注意：katex 必须全站单版本（rehype-katex@7 官方支持 ^0.16），
+   版本错位会导致 HTML 类名与 katex.css 规则不匹配、公式失去字号样式 */
+.prose .katex .katex-sizing.reset-size6.size3,
 .prose .katex .sizing.reset-size6.size3,
 .prose .katex .fontsize-ensurer.reset-size6.size3 { font-size: 0.5em; }
 

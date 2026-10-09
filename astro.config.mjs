@@ -9,6 +9,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { rehypeRewriteImg } from './src/plugins/rehype-rewrite-img';
 import { remarkSingleLineDisplayMath } from './src/plugins/remark-single-line-display-math';
+import { rehypeHeadingMathToc } from './src/plugins/rehype-heading-math-toc';
 
 export default defineConfig({
   output: 'server',
@@ -21,7 +22,7 @@ export default defineConfig({
   markdown: {
     processor: unified({
       remarkPlugins: [remarkMath, remarkSingleLineDisplayMath],
-      rehypePlugins: [rehypeKatex, rehypeRewriteImg],
+      rehypePlugins: [rehypeKatex, rehypeHeadingMathToc, rehypeRewriteImg],
     }),
   },
   site: 'https://oneweblog.cn',
