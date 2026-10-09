@@ -224,7 +224,7 @@ body {
    版本错位会导致 HTML 类名与 katex.css 规则不匹配、公式失去字号样式 */
 .prose .katex .katex-sizing.reset-size6.size3,
 .prose .katex .sizing.reset-size6.size3,
-.prose .katex .fontsize-ensurer.reset-size6.size3 { font-size: 0.5em; }
+.prose .katex .fontsize-ensurer.reset-size6.size3 { font-size: 0.6em; }
 
 /* Code block wrapper */
 .code-block-wrapper {
