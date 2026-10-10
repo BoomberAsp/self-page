@@ -36,6 +36,8 @@ export const GET: APIRoute = async ({ url }) => {
     JSON.stringify({
       url: `${entry.url}#${entry.anchor}`,
       label: entry.label,
+      // label 可能含 $…$ 公式，卡片用 HTML 渲染（与正文同一 titleHtml 路径）
+      labelHtml: titleHtml(entry.label),
       articleTitle: entry.articleTitle,
       excerptHtml,
     }),

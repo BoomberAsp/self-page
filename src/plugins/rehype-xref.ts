@@ -18,19 +18,37 @@
 import type { Root, Element } from "hast";
 import { visit, SKIP } from "unist-util-visit";
 import { visitParents } from "unist-util-visit-parents";
+import { fromHtml } from "hast-util-from-html";
 import { labelToKey, loadRegistry, type XrefRegistry } from "../lib/xref-registry";
+import { titleHtml } from "../lib/math-title";
 
 /**
  * 段落首个 <strong> 是否为定理标签——只需要判定前缀是类型词 + 可选编号。
- * 与 xref-registry 的 labelToKey 配合使用：plainText 会跳过公式子树，
- * 因此含公式的标签（如 "Definition 3.73 (matrix of a vector, 𝒑(v))"）
- * 取到的是前缀 "Definition 3.73"，编号仍在，生成的 key 与扫描器一致。
+ * 与 xref-registry 的 labelToKey 配合使用：plainText 会把 katex 子树经
+ * annotation 还原为 $tex$，因此取到的标签文本与扫描器读到的 MDX 原文
+ * 一致（含公式的括号名也一致），两侧生成的 key 恒等。
  */
 const LABEL_PREFIX_RE = new RegExp(
   `^(Theorem|Lemma|Definition|Proposition|Corollary|Example|Notation|定理|引理|定义|命题|推论|例子|记号)\\s*[\\d.A-Za-z]*`
 );
 
-/** 取元素纯文本；跳过 katex 子树（其内部文本是 MathML/annotation 的三份拼接） */
+/** 从 katex 子树提取 LaTeX 源码（annotation 元素文本） */
+function katexToTeX(node: Element): string | null {
+  let tex: string | null = null;
+  visit(node, "element", (el: any) => {
+    if (tex !== null || el.tagName !== "annotation") return;
+    tex = (el.children ?? [])
+      .filter((c: any) => c.type === "text")
+      .map((c: any) => c.value)
+      .join("");
+  });
+  return tex;
+}
+
+/**
+ * 取元素纯文本；katex 子树经 annotation 还原为 $tex$（跳过其 MathML/
+ * 视觉文本的三份拼接），使标签文本与 MDX 原文逐字一致。
+ */
 function plainText(node: Element): string {
   let out = "";
   const walk = (n: any) => {
@@ -44,12 +62,28 @@ function plainText(node: Element): string {
       Array.isArray(cls) &&
       (cls.includes("katex") || cls.includes("katex-display"))
     ) {
-      return; // 标签内公式不参与 key 判定
+      const tex = katexToTeX(n);
+      if (tex) out += `$${tex}$`;
+      return;
     }
     (n.children ?? []).forEach(walk);
   };
   (node.children ?? []).forEach(walk);
   return out.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * label（可能含 $…$）→ hast 子节点：文本段转义、公式段经 KaTeX 渲染，
+ * 用于空链接文本的自动填充（与悬浮卡片同一渲染路径 titleHtml）。
+ */
+function labelNodes(label: string): any[] {
+  if (!label.includes("$")) return [{ type: "text", value: label }];
+  try {
+    const frag = fromHtml(titleHtml(label), { fragment: true });
+    return (frag.children ?? []) as any[];
+  } catch {
+    return [{ type: "text", value: label }];
+  }
 }
 
 function hasClass(node: any, name: string): boolean {
@@ -172,7 +206,7 @@ export function rehypeXref() {
       node.properties.title = hit.articleTitle;
       addClass(node, "xref-link");
       if ((node.children ?? []).length === 0) {
-        node.children = [{ type: "text", value: hit.label }];
+        node.children = labelNodes(hit.label);
       }
     });
   };

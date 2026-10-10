@@ -9,6 +9,7 @@
 interface XrefData {
   url: string;
   label: string;
+  labelHtml?: string;
   articleTitle: string;
   excerptHtml: string;
 }
@@ -89,7 +90,10 @@ async function show(link: HTMLElement) {
 
   const label = document.createElement("div");
   label.className = "xref-card-label";
-  label.textContent = data.label;
+  // labelHtml 由本站 API 生成（文本转义 + KaTeX 渲染），可信；
+  // 旧缓存无 labelHtml 时退回纯文本
+  if (data.labelHtml) label.innerHTML = data.labelHtml;
+  else label.textContent = data.label;
 
   const excerpt = document.createElement("div");
   excerpt.className = "xref-card-excerpt";

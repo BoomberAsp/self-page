@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Fuse from 'fuse.js';
 import { Search, X } from 'lucide-react';
 
@@ -13,12 +14,18 @@ interface PostIndex {
 
 export default function SearchModal() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PostIndex[]>([]);
   const [index, setIndex] = useState<PostIndex[] | null>(null);
   const [fuse, setFuse] = useState<Fuse<PostIndex> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // 弹窗必须 portal 到 body：本组件挂在 sticky 侧边栏内，sticky 会创建
+  // stacking context，z-index 被困在其中；正文 KaTeX 全是 position:
+  // relative/absolute 的定位元素，DOM 序靠后会整体盖住弹窗
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     fetch('/search.json')
@@ -87,9 +94,9 @@ export default function SearchModal() {
         <kbd class="text-[0.65rem] opacity-40 tracking-wide">Ctrl+K</kbd>
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <div
-          class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/50 backdrop-blur-[2px]"
+          class="fixed inset-0 z-[1100] flex items-start justify-center pt-[15vh] bg-black/50 backdrop-blur-[2px]"
           ref={modalRef}
           onClick={(e) => { if (e.target === modalRef.current) setOpen(false); }}
         >
@@ -147,7 +154,8 @@ export default function SearchModal() {
               <span><kbd class="px-1 py-0.5 rounded bg-[var(--border-light)]">Ctrl+K</kbd> 切换</span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
