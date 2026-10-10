@@ -10,6 +10,8 @@ import rehypeKatex from 'rehype-katex';
 import { rehypeRewriteImg } from './src/plugins/rehype-rewrite-img';
 import { remarkSingleLineDisplayMath } from './src/plugins/remark-single-line-display-math';
 import { rehypeHeadingMathToc } from './src/plugins/rehype-heading-math-toc';
+import { rehypeXref } from './src/plugins/rehype-xref';
+import { viteXrefRegistry } from './src/plugins/vite-xref-registry';
 
 export default defineConfig({
   output: 'server',
@@ -22,11 +24,11 @@ export default defineConfig({
   markdown: {
     processor: unified({
       remarkPlugins: [remarkMath, remarkSingleLineDisplayMath],
-      rehypePlugins: [rehypeKatex, rehypeHeadingMathToc, rehypeRewriteImg],
+      rehypePlugins: [rehypeKatex, rehypeHeadingMathToc, rehypeXref, rehypeRewriteImg],
     }),
   },
   site: 'https://oneweblog.cn',
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), viteXrefRegistry()],
   },
 });

@@ -1,5 +1,6 @@
 import type { Root, Element } from "hast";
 import { visit } from "unist-util-visit";
+import { makeSlugger } from "../lib/slug";
 
 /**
  * Astro 内置的 rehypeHeadingIds 在所有用户 rehype 插件之后运行，且会拼接
@@ -57,24 +58,6 @@ function headingText(node: Element): string {
   };
   (node.children ?? []).forEach(walk);
   return out.replace(/\s+/g, " ").trim();
-}
-
-/** 生成 URL 安全且唯一的 slug（保留中日韩文字，剔除 LaTeX 命令与标点） */
-function makeSlugger() {
-  const used = new Map<string, number>();
-  return (text: string): string => {
-    const base =
-      text
-        .toLowerCase()
-        .replace(/\$/g, "")
-        .replace(/\\[a-zA-Z]+/g, " ")
-        .replace(/[^\p{L}\p{N}\s_-]/gu, "")
-        .trim()
-        .replace(/\s+/g, "-") || "section";
-    const n = used.get(base) ?? 0;
-    used.set(base, n + 1);
-    return n === 0 ? base : `${base}-${n}`;
-  };
 }
 
 export function rehypeHeadingMathToc() {

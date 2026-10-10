@@ -323,3 +323,48 @@ body {
   color: var(--primary);
   border-left-color: var(--primary);
 }
+
+/* 锚点跳转时避开移动端顶栏/粘性头部遮挡 */
+.prose [id] { scroll-margin-top: 4.5rem; }
+
+/* 站内引用（xref）链接：虚线下划线，hover 变实线 */
+.prose a.xref-link {
+  text-decoration: none;
+  border-bottom: 1px dashed var(--link);
+}
+.prose a.xref-link:hover {
+  border-bottom-style: solid;
+}
+
+/* xref 悬浮预览卡片 */
+.xref-card {
+  position: absolute;
+  z-index: 1000;
+  max-width: 380px;
+  min-width: 220px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.75rem 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.xref-card[hidden] { display: none; }
+.xref-card-label {
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 0.25rem;
+}
+.xref-card-excerpt {
+  color: var(--text-secondary);
+}
+.xref-card-excerpt .katex { font-size: 1.02em; }
+.xref-card-source {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}

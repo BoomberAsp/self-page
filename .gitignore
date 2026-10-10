@@ -1,6 +1,7 @@
 node_modules
 dist
 .env
+.xref-registry.json
 .DS_Store
 *.local
 
