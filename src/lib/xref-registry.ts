@@ -43,16 +43,24 @@ export interface XrefRegistry {
 export const REGISTRY_FILENAME = ".xref-registry.json";
 
 const THEOREM_WORDS =
-  "Theorem|Lemma|Definition|Proposition|Corollary|定理|引理|定义|命题|推论";
+  "Theorem|Lemma|Definition|Proposition|Corollary|Example|Notation|定理|引理|定义|命题|推论|例子|记号";
 
-/** 匹配段落开头的加粗定理标签，捕获 **…** 内的完整标签文本 */
+/**
+ * 匹配段落开头的加粗定理标签，捕获 **…** 内的完整标签文本。
+ * 括号部分用 [\s\S]*? 惰性匹配到最近的 "**"，因此括号名里可以含 LaTeX
+ * 反斜杠（如 "Definition 3.31 (Matrix of a linear map, $\mathcal{M}(T)$)"）。
+ */
 const THEOREM_LINE_RE = new RegExp(
-  `^\\*\\*((?:${THEOREM_WORDS})\\s*[\\d.]*\\s*(?:\\([^)]*\\))?)\\*\\*`
+  `^\\*\\*((?:${THEOREM_WORDS})[\\s\\S]*?)\\*\\*`
 );
 
-/** 解析标签文本：类型词 + 可选编号 + 可选括号名 */
+/**
+ * 解析标签文本：类型词 + 可选编号 + 可选括号名。
+ * 编号允许字母段（Axler 的 "3.C.14" 这种按节编号的写法），避免把
+ * "Example 3.C.12" 误解析成 "Example 3."。
+ */
 const LABEL_RE = new RegExp(
-  `^(${THEOREM_WORDS})\\s*([\\d.]+)?\\s*(?:\\(([^)]*)\\))?$`,
+  `^(${THEOREM_WORDS})\\s*([\\dA-Za-z][\\d.A-Za-z]*)?\\s*(?:\\(([\\s\\S]*)\\))?$`,
   "i"
 );
 
@@ -67,6 +75,10 @@ const NAMESPACE: Record<string, string> = {
   命题: "prop",
   corollary: "cor",
   推论: "cor",
+  example: "ex",
+  例子: "ex",
+  notation: "nota",
+  记号: "nota",
 };
 
 /**
@@ -82,8 +94,11 @@ export function labelToKey(labelText: string): string | null {
   const num = m[2]?.replace(/\.+$/, "");
   if (num) return `${ns}:${num}`;
   const name = m[3]?.trim();
-  if (name) return `${ns}:${slugify(name)}`;
-  return null;
+  if (!name) return null;
+  const slug = slugify(name);
+  // 括号名只含标点/公式（如 "()"、"(（ ）"）时 slug 为空，不注册
+  if (slug === "section") return null;
+  return `${ns}:${slug}`;
 }
 
 function walk(dir: string, out: string[] = []): string[] {

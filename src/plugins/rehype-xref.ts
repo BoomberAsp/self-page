@@ -20,6 +20,16 @@ import { visit, SKIP } from "unist-util-visit";
 import { visitParents } from "unist-util-visit-parents";
 import { labelToKey, loadRegistry, type XrefRegistry } from "../lib/xref-registry";
 
+/**
+ * 段落首个 <strong> 是否为定理标签——只需要判定前缀是类型词 + 可选编号。
+ * 与 xref-registry 的 labelToKey 配合使用：plainText 会跳过公式子树，
+ * 因此含公式的标签（如 "Definition 3.73 (matrix of a vector, 𝒑(v))"）
+ * 取到的是前缀 "Definition 3.73"，编号仍在，生成的 key 与扫描器一致。
+ */
+const LABEL_PREFIX_RE = new RegExp(
+  `^(Theorem|Lemma|Definition|Proposition|Corollary|Example|Notation|定理|引理|定义|命题|推论|例子|记号)\\s*[\\d.A-Za-z]*`
+);
+
 /** 取元素纯文本；跳过 katex 子树（其内部文本是 MathML/annotation 的三份拼接） */
 function plainText(node: Element): string {
   let out = "";
@@ -115,6 +125,10 @@ export function rehypeXref() {
       if (!first || (first as Element).tagName !== "strong") return;
       const text = plainText(first as Element);
       if (!text) return;
+      // 先按前缀判定是定理标签，再把标签文本交给 labelToKey 解析：
+      // 公式在 plainText 中被跳过，所以像 "Definition 3.73 (Matrix of a vector)"
+      // 这种标签取到的是 "Definition 3.73 ()" —— 编号仍在，key 一致。
+      if (!LABEL_PREFIX_RE.test(text)) return;
       const key = labelToKey(text);
       if (!key) return;
       node.properties = node.properties ?? {};
