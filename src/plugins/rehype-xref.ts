@@ -117,25 +117,44 @@ interface Resolved {
   articleTitle: string;
 }
 
+/** 标题锚点引用：basename（或完整 id）匹配文章 + slug 校验 */
+function resolveHeadingRef(
+  base: string,
+  frag: string,
+  registry: XrefRegistry
+): Resolved | null {
+  const article = Object.values(registry.articles).find(
+    (a) => a.basename === base || a.url.endsWith(`/${base}`)
+  );
+  if (!article) return null;
+  // remark-rehype 会把 href 里的非 ASCII 字符百分号编码
+  // （"#6-fields域" → "#6-fields%E5%9F%9F"），而注册表里的 slug 是原文，
+  // 因此先解码再比对；解码失败（畸形转义）时退回原文。
+  let decoded = frag;
+  try {
+    decoded = decodeURIComponent(frag);
+  } catch {
+    /* 保持原样 */
+  }
+  const anchor = article.headings.includes(decoded)
+    ? decoded
+    : article.headings.includes(frag)
+      ? frag
+      : null;
+  if (!anchor) return null;
+  return {
+    url: article.url,
+    anchor,
+    label: article.title,
+    articleTitle: article.title,
+  };
+}
+
 /** 解析 xref: 后的键；未命中返回 null */
 function resolveKey(raw: string, registry: XrefRegistry): Resolved | null {
   const hashIdx = raw.indexOf("#");
   if (hashIdx !== -1) {
-    // 标题锚点引用：basename（或完整 id）匹配文章 + slug 校验
-    const base = raw.slice(0, hashIdx);
-    const frag = raw.slice(hashIdx + 1);
-    const article = Object.values(registry.articles).find(
-      (a) => a.basename === base || a.url.endsWith(`/${base}`)
-    );
-    if (article && article.headings.includes(frag)) {
-      return {
-        url: article.url,
-        anchor: frag,
-        label: article.title,
-        articleTitle: article.title,
-      };
-    }
-    return null;
+    return resolveHeadingRef(raw.slice(0, hashIdx), raw.slice(hashIdx + 1), registry);
   }
   const entry = registry.entries[raw];
   if (!entry) return null;
